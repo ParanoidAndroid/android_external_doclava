@@ -296,7 +296,7 @@ public class Comment {
     isDeprecated();
 
     // Don't bother parsing text if we aren't generating documentation.
-    if (Doclava.generatingDocs()) {
+    if (Doclava.parseComments()) {
       parseRegex(mText);
       parseBriefTags();
     } else {

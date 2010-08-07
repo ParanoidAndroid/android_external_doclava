@@ -121,50 +121,52 @@ public class Errors {
     }
   }
 
-  public static final Error UNRESOLVED_LINK = new Error(1, WARNING);
-  public static final Error BAD_INCLUDE_TAG = new Error(2, WARNING);
-  public static final Error UNKNOWN_TAG = new Error(3, WARNING);
-  public static final Error UNKNOWN_PARAM_TAG_NAME = new Error(4, WARNING);
-  public static final Error UNDOCUMENTED_PARAMETER = new Error(5, HIDDEN);
-  public static final Error BAD_ATTR_TAG = new Error(6, ERROR);
-  public static final Error BAD_INHERITDOC = new Error(7, HIDDEN);
-  public static final Error HIDDEN_LINK = new Error(8, WARNING);
-  public static final Error HIDDEN_CONSTRUCTOR = new Error(9, WARNING);
-  public static final Error UNAVAILABLE_SYMBOL = new Error(10, ERROR);
-  public static final Error HIDDEN_SUPERCLASS = new Error(11, WARNING);
-  public static final Error DEPRECATED = new Error(12, HIDDEN);
-  public static final Error DEPRECATION_MISMATCH = new Error(13, WARNING);
-  public static final Error MISSING_COMMENT = new Error(14, WARNING);
-  public static final Error IO_ERROR = new Error(15, HIDDEN);
-  public static final Error NO_SINCE_DATA = new Error(16, HIDDEN);
-  public static final Error NO_FEDERATION_DATA = new Error(17, WARNING);
+  // Errors for API verification
+  public static Error PARSE_ERROR = new Error(1, ERROR);
+  public static Error ADDED_PACKAGE = new Error(2, WARNING);
+  public static Error ADDED_CLASS = new Error(3, WARNING);
+  public static Error ADDED_METHOD = new Error(4, WARNING);
+  public static Error ADDED_FIELD = new Error(5, WARNING);
+  public static Error ADDED_INTERFACE = new Error(6, WARNING);
+  public static Error REMOVED_PACKAGE = new Error(7, WARNING);
+  public static Error REMOVED_CLASS = new Error(8, WARNING);
+  public static Error REMOVED_METHOD = new Error(9, WARNING);
+  public static Error REMOVED_FIELD = new Error(10, WARNING);
+  public static Error REMOVED_INTERFACE = new Error(11, WARNING);
+  public static Error CHANGED_STATIC = new Error(12, WARNING);
+  public static Error CHANGED_FINAL = new Error(13, WARNING);
+  public static Error CHANGED_TRANSIENT = new Error(14, WARNING);
+  public static Error CHANGED_VOLATILE = new Error(15, WARNING);
+  public static Error CHANGED_TYPE = new Error(16, WARNING);
+  public static Error CHANGED_VALUE = new Error(17, WARNING);
+  public static Error CHANGED_SUPERCLASS = new Error(18, WARNING);
+  public static Error CHANGED_SCOPE = new Error(19, WARNING);
+  public static Error CHANGED_ABSTRACT = new Error(20, WARNING);
+  public static Error CHANGED_THROWS = new Error(21, WARNING);
+  public static Error CHANGED_NATIVE = new Error(22, HIDDEN);
+  public static Error CHANGED_CLASS = new Error(23, WARNING);
+  public static Error CHANGED_DEPRECATED = new Error(24, WARNING);
+  public static Error CHANGED_SYNCHRONIZED = new Error(25, ERROR);
 
-  public static final Error PARSE_ERROR = new Error(18, ERROR); // Apicheck error code 1
-  public static final Error ADDED_PACKAGE = new Error(19, WARNING); // Apicheck error code 2
-  public static final Error ADDED_CLASS = new Error(20, WARNING); // Apicheck error code 3
-  public static final Error ADDED_METHOD = new Error(21, WARNING); // Apicheck error code 4
-  public static final Error ADDED_FIELD = new Error(22, WARNING); // Apicheck error code 5
-  public static final Error ADDED_INTERFACE = new Error(23, WARNING); // Apicheck error code 6
-  public static final Error REMOVED_PACKAGE = new Error(24, WARNING); // Apicheck error code 7
-  public static final Error REMOVED_CLASS = new Error(25, WARNING); // Apicheck error code 8
-  public static final Error REMOVED_METHOD = new Error(26, WARNING); // Apicheck error code 9
-  public static final Error REMOVED_FIELD = new Error(27, WARNING); // Apicheck error code 10
-  public static final Error REMOVED_INTERFACE = new Error(28, WARNING); // Apicheck error code 11
-  public static final Error CHANGED_STATIC = new Error(29, WARNING); // Apicheck error code 12
-  public static final Error CHANGED_FINAL = new Error(30, WARNING); // Apicheck error code 13
-  public static final Error CHANGED_TRANSIENT = new Error(31, WARNING); // Apicheck error code 14
-  public static final Error CHANGED_VOLATILE = new Error(32, WARNING); // Apicheck error code 15
-  public static final Error CHANGED_TYPE = new Error(33, WARNING); // Apicheck error code 16
-  public static final Error CHANGED_VALUE = new Error(34, WARNING); // Apicheck error code 17
-  public static final Error CHANGED_SUPERCLASS = new Error(35, WARNING); // Apicheck error code 18
-  public static final Error CHANGED_SCOPE = new Error(36, WARNING); // Apicheck error code 19
-  public static final Error CHANGED_ABSTRACT = new Error(37, WARNING); // Apicheck error code 20
-  public static final Error CHANGED_THROWS = new Error(38, WARNING); // Apicheck error code 21
-  public static final Error CHANGED_NATIVE = new Error(39, HIDDEN); // Apicheck error code 22
-  public static final Error CHANGED_CLASS = new Error(40, WARNING); // Apicheck error code 23
-  public static final Error CHANGED_DEPRECATED = new Error(41, WARNING); // Apicheck error code 24
-  public static final Error CHANGED_SYNCHRONIZED = new Error(42, ERROR); // Apicheck error code 25
-  
+  // Errors in javadoc generation
+  public static final Error UNRESOLVED_LINK = new Error(101, WARNING);
+  public static final Error BAD_INCLUDE_TAG = new Error(102, WARNING);
+  public static final Error UNKNOWN_TAG = new Error(103, WARNING);
+  public static final Error UNKNOWN_PARAM_TAG_NAME = new Error(104, WARNING);
+  public static final Error UNDOCUMENTED_PARAMETER = new Error(105, HIDDEN);
+  public static final Error BAD_ATTR_TAG = new Error(106, ERROR);
+  public static final Error BAD_INHERITDOC = new Error(107, HIDDEN);
+  public static final Error HIDDEN_LINK = new Error(108, WARNING);
+  public static final Error HIDDEN_CONSTRUCTOR = new Error(109, WARNING);
+  public static final Error UNAVAILABLE_SYMBOL = new Error(110, ERROR);
+  public static final Error HIDDEN_SUPERCLASS = new Error(111, WARNING);
+  public static final Error DEPRECATED = new Error(112, HIDDEN);
+  public static final Error DEPRECATION_MISMATCH = new Error(113, WARNING);
+  public static final Error MISSING_COMMENT = new Error(114, WARNING);
+  public static final Error IO_ERROR = new Error(115, HIDDEN);
+  public static final Error NO_SINCE_DATA = new Error(116, HIDDEN);
+  public static final Error NO_FEDERATION_DATA = new Error(117, WARNING);
+
   public static final Error[] ERRORS =
       {UNRESOLVED_LINK, BAD_INCLUDE_TAG, UNKNOWN_TAG, UNKNOWN_PARAM_TAG_NAME,
           UNDOCUMENTED_PARAMETER, BAD_ATTR_TAG, BAD_INHERITDOC, HIDDEN_LINK, HIDDEN_CONSTRUCTOR,
