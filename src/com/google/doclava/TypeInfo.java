@@ -265,7 +265,7 @@ public class TypeInfo {
   }
 
   static HashSet<String> typeVariables(TypeInfo[] params) {
-    return typeVariables(params, new HashSet());
+    return typeVariables(params, new HashSet<String>());
   }
 
   static HashSet<String> typeVariables(TypeInfo[] params, HashSet<String> result) {

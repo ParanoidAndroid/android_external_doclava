@@ -73,7 +73,8 @@ public class Doclava {
   public static String title = "";
   public static SinceTagger sinceTagger = new SinceTagger();
   public static FederationTagger federationTagger = new FederationTagger();
-  private static boolean generatingDocs = true;
+  private static boolean generateDocs = true;
+  private static boolean parseComments = false;
   
   public static JSilver jSilver = null;
 
@@ -82,10 +83,11 @@ public class Doclava {
   }
   
   /**
-   * Returns true if we are generating html reference documentation.
+   * Returns true if we should parse javadoc comments,
+   * reporting errors in the process.
    */
-  public static boolean generatingDocs() {
-    return generatingDocs;
+  public static boolean parseComments() {
+    return generateDocs || parseComments;
   }
 
   public static boolean checkLevel(boolean pub, boolean prot, boolean pkgp, boolean priv,
@@ -189,7 +191,9 @@ public class Doclava {
       } else if (a[0].equals("-apixml")) {
         apiFile = a[1];
       } else if (a[0].equals("-nodocs")) {
-        generatingDocs = false;
+        generateDocs = false;
+      } else if (a[0].equals("-parsecomments")) {
+        parseComments = true;
       } else if (a[0].equals("-since")) {
         sinceTagger.addVersion(a[1], a[2]);
       } else if (a[0].equals("-offlinemode")) {
@@ -210,7 +214,7 @@ public class Doclava {
     // Set up the data structures
     Converter.makeInfo(r);
 
-    if (generatingDocs) {
+    if (generateDocs) {
       ClearPage.addBundledTemplateDir("assets/customizations");
       ClearPage.addBundledTemplateDir("assets/templates");
 
@@ -446,6 +450,9 @@ public class Doclava {
       return 2;
     }
     if (option.equals("-nodocs")) {
+      return 1;
+    }
+    if (option.equals("-parsecomments")) {
       return 1;
     }
     if (option.equals("-since")) {

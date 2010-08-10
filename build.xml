@@ -33,7 +33,7 @@
 		<mkdir dir="${jar.dir}"/>
 
 		<copy todir="build/classes/assets">
-			<fileset dir="assets"/>
+			<fileset dir="res/assets"/>
 		</copy>
 
 		<jar jarfile="${jar.file}" manifest="src/MANIFEST.mf">
