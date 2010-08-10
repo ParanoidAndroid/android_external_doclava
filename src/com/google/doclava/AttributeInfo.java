@@ -49,6 +49,9 @@ public class AttributeInfo {
           return n;
         }
       }
+      mName = attrField.name();
+      Errors.error(Errors.BAD_ATTR_TAG, attrField.position(), mName + " referenced as an attribute,"
+          + " but \"@attr name\" not specified.");
     }
     return mName;
   }
