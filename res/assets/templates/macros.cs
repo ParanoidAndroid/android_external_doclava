@@ -272,12 +272,14 @@ def:expandable_class_list(id, classes, default) ?>
             <?cs /each ?>
           <?cs else ?>
             <?cs set:leftovers = subcount(classes) - #15 ?>
-            <?cs loop:i = #0, #15, #1 ?>
+            <?cs loop:i = #0, #14, #1 ?>
               <?cs with:cl=classes[i] ?>
-                <?cs call:type_link(cl.type) ?>, <?cs  if:(#i == #15) ?>and
-                <a href="#" onclick="return toggleInherited(document.getElementById('<?cs
-                   var:id ?>', null))"><?cs var:leftovers ?> others.<?cs /if ?></a>
+                <?cs call:type_link(cl.type) ?>,
               <?cs /with ?>
+              <?cs  if:(#i == #14) ?>and
+                <a href="#" onclick="return toggleInherited(document.getElementById('<?cs
+                   var:id ?>', null))"><?cs var:leftovers ?> others.</a>
+              <?cs /if ?>
             <?cs /loop ?>
           <?cs /if ?>
       </div>
