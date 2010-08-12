@@ -122,29 +122,11 @@ public class FieldInfo extends MemberInfo {
       }
       // catch all special values
       else if (val instanceof Double) {
-        Double dbl = (Double) val;
-        if (dbl.toString().equals("Infinity")) {
-          str = "(1.0 / 0.0)";
-        } else if (dbl.toString().equals("-Infinity")) {
-          str = "(-1.0 / 0.0)";
-        } else if (dbl.isNaN()) {
-          str = "(0.0 / 0.0)";
-        } else {
-          str = dbl.toString();
-        }
+        str = canonicalizeFloatingPoint(val.toString(), "");
+      } else if (val instanceof Float) {
+        str = canonicalizeFloatingPoint(val.toString(), "f");
       } else if (val instanceof Long) {
         str = val.toString() + "L";
-      } else if (val instanceof Float) {
-        Float fl = (Float) val;
-        if (fl.toString().equals("Infinity")) {
-          str = "(1.0f / 0.0f)";
-        } else if (fl.toString().equals("-Infinity")) {
-          str = "(-1.0f / 0.0f)";
-        } else if (fl.isNaN()) {
-          str = "(0.0f / 0.0f)";
-        } else {
-          str = val.toString() + "f";
-        }
       } else if (val instanceof Character) {
         str = String.format("\'\\u%04x\'", val);
       } else if (val instanceof String) {
@@ -157,6 +139,35 @@ public class FieldInfo extends MemberInfo {
       str = "null";
     }
     return str;
+  }
+
+  /**
+   * Returns a canonical string representation of a floating point
+   * number. The representation is suitable for use as Java source
+   * code. This method also addresses bug #4428022 in the Sun JDK.
+   */
+  private static String canonicalizeFloatingPoint(String val, String suffix) {
+    if (val.equals("Infinity")) {
+      return "(1.0" + suffix + " / 0.0" + suffix + ")";
+    } else if (val.equals("-Infinity")) {
+      return "(-1.0" + suffix + " / 0.0" + suffix + ")";
+    } else if (val.equals("NaN")) {
+      return "(0.0" + suffix + " / 0.0" + suffix + ")";
+    }
+
+    String str = val.toString();
+    if (str.indexOf('E') != -1) {
+      return str + suffix;
+    }
+
+    // 1.0 is the only case where a trailing "0" is allowed.
+    // 1.00 is canonicalized as 1.0.
+    int i = str.length() - 1;
+    int d = str.indexOf('.');
+    while (i >= d + 2 && str.charAt(i) == '0') {
+      str = str.substring(0, i--);
+    }
+    return str + suffix;
   }
 
   public static String javaEscapeString(String str) {
@@ -288,31 +299,8 @@ public class FieldInfo extends MemberInfo {
       throw new AssertionError("Bad type for field value");
     }
     
-    String mValue = (String)mConstantValue;
-    String oValue = (String)other.mConstantValue;
-    // Type mismatch means nonequal
-    if (!mType.equals(other.mType)) {
-      return false;
-    }
-
-    // Floating point gets an implementation-type comparison; all others just use the string
-    // If float/double parse fails, fall back to string comparison -- it means that it's a
-    // canonical droiddoc-generated constant expression that represents a NaN.
-    try {
-      if (mType.equals("float")) {
-        float val = Float.parseFloat(mValue);
-        float otherVal = Float.parseFloat(oValue);
-        return (val == otherVal);
-      } else if (mType.equals("double")) {
-        double val = Double.parseDouble(mValue);
-        double otherVal = Double.parseDouble(oValue);
-        return (val == otherVal);
-      }
-    } catch (NumberFormatException e) {
-      // fall through
-    }
-
-    return mValue.equals(oValue);
+    return mType.equals(other.mType)
+        && mConstantValue.equals(other.mConstantValue);
   }
   
   public boolean isConsistent(FieldInfo fInfo) {
