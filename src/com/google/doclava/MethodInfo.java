@@ -712,7 +712,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   }
 
   public boolean matches(MethodInfo other) {
-    return signature().equals(other.signature());
+    return prettySignature().equals(other.prettySignature());
   }
 
   public boolean throwsException(ClassInfo exception) {
