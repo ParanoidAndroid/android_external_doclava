@@ -75,21 +75,21 @@ public final class DoclavaDiff {
   /**
    * Creates an HDF with this structure:
    * <pre>
-   * sites.0.name = Android
-   * sites.0.url = http://developer.android.com/reference
-   * sites.1.name = GWT
-   * sites.1.url = http://gwt.googlecode.com
+   * sites.0.name = projectA
+   * sites.0.url = http://proja.domain.com/reference
+   * sites.1.name = projectB
+   * sites.1.url = http://projb.domain.com
    * packages.0.name = java.lang
    * packages.0.sites.0.hasPackage = 1
-   * packages.0.sites.0.link = http://developer.android.com/reference/java/lang
+   * packages.0.sites.0.link = http://proja.domain.com/reference/java/lang
    * packages.0.sites.1.hasPackage = 0
    * packages.0.classes.0.qualifiedName = java.lang.Object
    * packages.0.classes.0.sites.0.hasClass = 1
-   * packages.0.classes.0.sites.0.link = http://developer.android.com/reference/java/lang/Object
+   * packages.0.classes.0.sites.0.link = http://proja.domain.com/reference/java/lang/Object
    * packages.0.classes.0.sites.1.hasClass = 0 
    * packages.0.classes.0.methods.0.signature = wait()
    * packages.0.classes.0.methods.0.sites.0.hasMethod = 1
-   * packages.0.classes.0.methods.0.sites.0.link = http://developer.android.com/reference/java/lang/Object#wait
+   * packages.0.classes.0.methods.0.sites.0.link = http://proja.domain.com/reference/java/lang/Object#wait
    * packages.0.classes.0.methods.0.sites.1.hasMethod = 0
    * </pre>
    */

@@ -122,7 +122,7 @@ public class Doclava {
     String sdkValuePath = null;
     ArrayList<SampleCode> sampleCodes = new ArrayList<SampleCode>();
     String stubsDir = null;
-    // Create the dependency graph for the stubs directory
+    // Create the dependency graph for the stubs  directory
     boolean offlineMode = false;
     String apiFile = null;
     String debugStubsFile = "";

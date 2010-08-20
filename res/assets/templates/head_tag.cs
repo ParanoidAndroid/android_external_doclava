@@ -10,17 +10,17 @@
 <?cs else ?>Doclava
 <?cs /if ?>
 </title>
-<link href="<?cs var:toroot ?>assets/android-developer-docs.css" rel="stylesheet" type="text/css" />
+<link href="<?cs var:toroot ?>assets/doclava-developer-docs.css" rel="stylesheet" type="text/css" />
 <link href="<?cs var:toroot ?>assets/customizations.css" rel="stylesheet" type="text/css" />
 <script src="<?cs var:toroot ?>assets/search_autocomplete.js" type="text/javascript"></script>
 <script src="<?cs var:toroot ?>assets/jquery-resizable.min.js" type="text/javascript"></script>
-<script src="<?cs var:toroot ?>assets/android-developer-docs.js" type="text/javascript"></script>
+<script src="<?cs var:toroot ?>assets/doclava-developer-docs.js" type="text/javascript"></script>
 <script src="<?cs var:toroot ?>assets/prettify.js" type="text/javascript"></script>
 <script type="text/javascript">
   setToRoot("<?cs var:toroot ?>");
 </script><?cs 
 if:reference ?>
-<script src="<?cs var:toroot ?>assets/android-developer-reference.js" type="text/javascript"></script>
+<script src="<?cs var:toroot ?>assets/doclava-developer-reference.js" type="text/javascript"></script>
 <script src="<?cs var:toroot ?>navtree_data.js" type="text/javascript"></script><?cs 
 /if ?>
 <script src="<?cs var:toroot ?>assets/customizations.js" type="text/javascript"></script>

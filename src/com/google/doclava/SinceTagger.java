@@ -36,8 +36,8 @@ import java.util.Collections;
  *   ClassInfo[] classInfos = ...
  *
  *   SinceTagger sinceTagger = new SinceTagger()
- *   sinceTagger.addVersion("frameworks/base/api/1.xml", "Android 1.0")
- *   sinceTagger.addVersion("frameworks/base/api/2.xml", "Android 1.5")
+ *   sinceTagger.addVersion("frameworks/base/api/1.xml", "product 1.0")
+ *   sinceTagger.addVersion("frameworks/base/api/2.xml", "product 1.5")
  *   sinceTagger.tagAll(...);
  * </pre>
  */

@@ -51,7 +51,6 @@ def:cond_link(text, root, path, condition) ?><?cs
   if:condition ?><a href="<?cs var:root ?><?cs var:path ?>"><?cs /if ?><?cs var:text ?><?cs if:condition ?></a><?cs /if ?><?cs
 /def ?>
 
-
 <?cs # A comma separated parameter list ?><?cs 
 def:parameter_list(params) ?><?cs
   each:param = params ?><?cs
@@ -291,5 +290,5 @@ def:expandable_class_list(id, classes, default) ?>
   </div><?cs 
 /def ?>
 
-
 <?cs include:"components.cs" ?>
+
