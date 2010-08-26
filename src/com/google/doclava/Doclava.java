@@ -143,7 +143,7 @@ public class Doclava {
       } else if (a[0].equals("-samplecode")) {
         sampleCodes.add(new SampleCode(a[1], a[2], a[3]));
       } else if (a[0].equals("-htmldir")) {
-        ClearPage.htmlDir = a[1];
+        ClearPage.htmlDirs.add(a[1]);
       } else if (a[0].equals("-title")) {
         Doclava.title = a[1];
       } else if (a[0].equals("-werror")) {
@@ -253,7 +253,7 @@ public class Doclava {
       }
 
       // HTML Pages
-      if (ClearPage.htmlDir != null) {
+      if (!ClearPage.htmlDirs.isEmpty()) {
         writeHTMLPages();
       }
 
@@ -594,14 +594,17 @@ public class Doclava {
   }
 
   public static void writeHTMLPages() {
-    File f = new File(ClearPage.htmlDir);
-    if (!f.isDirectory()) {
-      System.err.println("htmlDir not a directory: " + ClearPage.htmlDir);
-    }
+    for (String htmlDir : ClearPage.htmlDirs) {
+      File f = new File(htmlDir);
+      if (!f.isDirectory()) {
+        System.err.println("htmlDir not a directory: " + htmlDir);
+        continue;
+      }
 
-    ResourceLoader loader = new FileSystemResourceLoader(f);
-    JSilver js = new JSilver(loader);
-    writeDirectory(f, "", js);
+      ResourceLoader loader = new FileSystemResourceLoader(f);
+      JSilver js = new JSilver(loader);
+      writeDirectory(f, "", js);
+    }
   }
 
   public static void writeAssets() {
