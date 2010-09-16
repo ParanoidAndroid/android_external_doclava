@@ -33,10 +33,21 @@ public class Comment {
   static final Pattern FIRST_SENTENCE =
       Pattern.compile("((.*?)\\.)[ \t\r\n\\<](.*)", Pattern.DOTALL);
 
-  private static final String[] KNOWN_TAGS =
-      new String[] {"@author", "@since", "@version", "@deprecated", "@undeprecate", "@docRoot",
-          "@sdkCurrent", "@inheritDoc", "@more", "@samplecode", "@sample", "@include",
-          "@serial", "@com.intel.drl.spec_ref", "@ar.org.fitc.spec_ref",};
+  private static final String[] KNOWN_TAGS = new String[] {
+          "@author",
+          "@since",
+          "@version",
+          "@deprecated",
+          "@undeprecate",
+          "@docRoot",
+          "@sdkCurrent",
+          "@inheritDoc",
+          "@more",
+          "@samplecode",
+          "@sample",
+          "@include",
+          "@serial",
+      };
 
   public Comment(String text, ContainerInfo base, SourcePositionInfo sp) {
     mText = text;
@@ -146,6 +157,9 @@ public class Comment {
           known = true;
           break;
         }
+      }
+      if (!known) {
+        known = Doclava.knownTags.contains(name);
       }
       if (!known) {
         Errors.error(Errors.UNKNOWN_TAG, pos == null ? null : new SourcePositionInfo(pos),
