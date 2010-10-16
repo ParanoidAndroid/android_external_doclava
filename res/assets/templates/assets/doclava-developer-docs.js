@@ -150,7 +150,7 @@ function init() {
   devdocNav = $("#devdoc-nav");
 
   var cookiePath = getSection() + "_";
-  
+
   if (!isMobile) {
     $("#resize-packages-nav").resizable({handles: "s", resize: function(e, ui) { resizePackagesHeight(); } });
     $(".side-nav-resizable").resizable({handles: "e", resize: function(e, ui) { resizeWidth(); } });

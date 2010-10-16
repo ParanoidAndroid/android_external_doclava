@@ -17,27 +17,21 @@
 <div id="jd-header">
   package
   <h1><?cs var:package.name ?></h1>
-  <div class="jd-nav">
-      <?cs if:subcount(package.shortDescr) ?>
-        Classes | <a class="jd-navlink" href="package-descr.html">Description</a>
-      <?cs /if ?>
-  </div>
 </div><!-- end header -->
 
 <div id="naMessage"></div>
 
 <div id="jd-content" class="api apilevel-<?cs var:package.since ?>">
 
-<?cs if:subcount(package.shortDescr) ?>
+<?cs if:subcount(package.descr) ?>
   <div class="jd-descr">
-  <p><?cs call:tag_list(package.shortDescr) ?></p>
-  <p><span class="jd-more"><a href="package-descr.html">more...</a></span></p>
+    <?cs call:tag_list(package.descr) ?>
   </div>
 <?cs /if ?>
 
 <?cs def:class_table(label, classes) ?>
   <?cs if:subcount(classes) ?>
-    <h3><?cs var:label ?></h3>
+    <h2><?cs var:label ?></h2>
     <div class="jd-sumtable">
     <?cs call:class_link_table(classes) ?>
     </div>

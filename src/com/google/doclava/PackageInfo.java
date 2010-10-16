@@ -23,7 +23,7 @@ import java.util.*;
 
 public class PackageInfo extends DocInfo implements ContainerInfo {
   public static final String DEFAULT_PACKAGE = "default package";
-  
+
   public static final Comparator<PackageInfo> comparator = new Comparator<PackageInfo>() {
     public int compare(PackageInfo a, PackageInfo b) {
       return a.name().compareTo(b.name());
@@ -40,15 +40,15 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
 
     mPackage = pkg;
   }
-  
+
   public PackageInfo(String name) {
     super("", null);
     mName = name;
   }
-  
+
   public PackageInfo(String name, SourcePositionInfo position) {
     super("", position);
-    
+
     if (name.isEmpty()) {
       mName = "default package";
     } else {
@@ -60,14 +60,6 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
     String s = mName;
     s = s.replace('.', '/');
     s += "/package-summary.html";
-    s = Doclava.javadocDir + s;
-    return s;
-  }
-
-  public String fullDescriptionHtmlPage() {
-    String s = mName;
-    s = s.replace('.', '/');
-    s += "/package-descr.html";
     s = Doclava.javadocDir + s;
     return s;
   }
@@ -185,10 +177,10 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
   private ClassInfo[] mEnums;
   private ClassInfo[] mExceptions;
   private ClassInfo[] mErrors;
-  
+
   // TODO: Leftovers from ApiCheck that should be better merged.
   private HashMap<String, ClassInfo> mClasses = new HashMap<String, ClassInfo>();
-  
+
   public void addClass(ClassInfo cl) {
     mClasses.put(cl.name(), cl);
   }
@@ -196,7 +188,7 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
   public HashMap<String, ClassInfo> allClasses() {
     return mClasses;
   }
-  
+
   public boolean isConsistent(PackageInfo pInfo) {
     boolean consistent = true;
     for (ClassInfo cInfo : mClasses.values()) {

@@ -76,13 +76,13 @@ public class Doclava {
   public static FederationTagger federationTagger = new FederationTagger();
   private static boolean generateDocs = true;
   private static boolean parseComments = false;
-  
+
   public static JSilver jSilver = null;
 
   public static boolean checkLevel(int level) {
     return (showLevel & level) == level;
   }
-  
+
   /**
    * Returns true if we should parse javadoc comments,
    * reporting errors in the process.
@@ -247,7 +247,7 @@ public class Doclava {
 
       // Apply @since tags from the XML file
       sinceTagger.tagAll(Converter.rootClasses());
-      
+
       // Apply details of federated documentation
       federationTagger.tagAll(Converter.rootClasses());
 
@@ -309,7 +309,7 @@ public class Doclava {
     }
 
     Errors.printErrors();
-    
+
     return !Errors.hadError;
   }
 
@@ -762,7 +762,7 @@ public class Doclava {
   /**
    * Writes the list of classes that must be present in order to provide the non-hidden APIs known
    * to javadoc.
-   * 
+   *
    * @param filename the path to the file to write the list to
    */
   public static void writeKeepList(String filename) {
@@ -914,10 +914,6 @@ public class Doclava {
     setPageTitle(data, name);
     ClearPage.write(data, "package.cs", filename);
 
-    filename = pkg.fullDescriptionHtmlPage();
-    setPageTitle(data, name + " Details");
-    ClearPage.write(data, "package-descr.cs", filename);
-
     Proofread.writePackage(filename, pkg.inlineTags());
   }
 
@@ -978,18 +974,18 @@ public class Doclava {
   /*
    * public static void writeKeywords() { ArrayList<KeywordEntry> keywords = new
    * ArrayList<KeywordEntry>();
-   * 
+   *
    * ClassInfo[] classes = PackageInfo.filterHidden(Converter.convertClasses(root.classes()));
-   * 
+   *
    * for (ClassInfo cl: classes) { cl.makeKeywordEntries(keywords); }
-   * 
+   *
    * HDF data = makeHDF();
-   * 
+   *
    * Collections.sort(keywords);
-   * 
+   *
    * int i=0; for (KeywordEntry entry: keywords) { String base = "keywords." + entry.firstChar() +
    * "." + i; entry.makeHDF(data, base); i++; }
-   * 
+   *
    * setPageTitle(data, "Index"); ClearPage.write(data, "keywords.cs", javadocDir + "keywords" +
    * htmlExtension); }
    */
@@ -1195,7 +1191,7 @@ public class Doclava {
 
   /**
    * Collect the values used by the Dev tools and write them in files packaged with the SDK
-   * 
+   *
    * @param output the ouput directory for the files.
    */
   private static void writeSdkValues(String output) {
@@ -1323,7 +1319,7 @@ public class Doclava {
 
   /**
    * Writes a list of values into a text files.
-   * 
+   *
    * @param pathname the absolute os path of the output file.
    * @param values the list of values to write.
    */
@@ -1355,7 +1351,7 @@ public class Doclava {
 
   /**
    * Writes the widget/layout/layout param classes into a text files.
-   * 
+   *
    * @param pathname the absolute os path of the output file.
    * @param widgets the list of widget classes to write.
    * @param layouts the list of layout classes to write.
@@ -1397,7 +1393,7 @@ public class Doclava {
 
   /**
    * Writes a class name and its super class names into a {@link BufferedWriter}.
-   * 
+   *
    * @param writer the BufferedWriter to write into
    * @param clazz the class to write
    * @param prefix the prefix to put at the beginning of the line.
@@ -1422,7 +1418,7 @@ public class Doclava {
    * <code>android.view.ViewGroup$LayoutParams</code></li>
    * <li>{@link #TYPE_NONE}: in all other cases</li>
    * </ul>
-   * 
+   *
    * @param clazz the {@link ClassInfo} to check.
    */
   private static int checkInheritance(ClassInfo clazz) {
