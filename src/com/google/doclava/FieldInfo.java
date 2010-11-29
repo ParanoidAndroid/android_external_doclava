@@ -32,7 +32,7 @@ public class FieldInfo extends MemberInfo {
       boolean isSynthetic, TypeInfo type, String rawCommentText, Object constantValue,
       SourcePositionInfo position, AnnotationInstanceInfo[] annotations) {
     super(rawCommentText, name, null, containingClass, realContainingClass, isPublic, isProtected,
-        isPackagePrivate, isPrivate, isFinal, isStatic, isSynthetic, chooseKind(isFinal, isStatic),
+          isPackagePrivate, isPrivate, isFinal, isStatic, isSynthetic, chooseKind(isFinal, isStatic, constantValue),
         position, annotations);
     mIsTransient = isTransient;
     mIsVolatile = isVolatile;
@@ -47,12 +47,9 @@ public class FieldInfo extends MemberInfo {
         annotations());
   }
 
-  static String chooseKind(boolean isFinal, boolean isStatic) {
-    if (isStatic && isFinal) {
-      return "constant";
-    } else {
-      return "field";
-    }
+  static String chooseKind(boolean isFinal, boolean isStatic, Object constantValue)
+  {
+    return isConstant(isFinal, isStatic, constantValue) ? "constant" : "field";
   }
   
   public String qualifiedName() {
@@ -65,8 +62,21 @@ public class FieldInfo extends MemberInfo {
     return mType;
   }
 
+  static boolean isConstant(boolean isFinal, boolean isStatic, Object constantValue)
+  {
+    /*
+     * Note: There is an ambiguity in the doc API that prevents us
+     * from distinguishing a constant-null from the lack of a
+     * constant at all. We err on the side of treating all null
+     * constantValues as meaning that the field is not a constant,
+     * since having a static final field assigned to null is both
+     * unusual and generally pretty useless.
+     */
+    return isFinal && isStatic && (constantValue != null);
+  }
+
   public boolean isConstant() {
-    return isStatic() && isFinal();
+    return isConstant(isFinal(), isStatic(), mConstantValue);
   }
 
   public TagInfo[] firstSentenceTags() {
