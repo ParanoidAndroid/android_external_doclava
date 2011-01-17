@@ -15,11 +15,9 @@
  </div>
 
 <div id="jd-content">
+<p><a href="../index.html">&larr; Back</a></p>
 
 <?cs var:summary ?>
-
-<?cs if:android.whichdoc == "online" ?><?cs
-  # If this is the online docs, build the src code navigation links ?>
 
   <?cs if:subcount(subdirs) ?>
       <h2>Subdirectories</h2>
@@ -40,17 +38,6 @@
       <?cs /each ?>
       </ul>
   <?cs /if ?>
-
-<?cs else ?><?cs
-  # else, this means it's offline docs,
-          so don't show src links (we don't have the pages!) ?>
-
-<p>You can find the source code for this sample in your SDK at:</p>
-<p style="margin-left:2em">
-<code><em>&lt;sdk&gt;</em>/platforms/android-<em>&lt;version&gt;</em>/samples/</code>
-</p>
-
-<?cs /if ?><?cs # end if/else online docs ?>
 
 </div><!-- end jd-content -->
 

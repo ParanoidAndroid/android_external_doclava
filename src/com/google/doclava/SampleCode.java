@@ -44,9 +44,9 @@ public class SampleCode {
       System.out.println("-samplecode not a directory: " + mSource);
       return;
     }
-    if (offlineMode)
-      writeIndexOnly(f, mDest, offlineMode);
-    else
+ //   if (offlineMode)
+ //     writeIndexOnly(f, mDest, offlineMode);
+ //   else
       writeDirectory(f, mDest);
   }
 
