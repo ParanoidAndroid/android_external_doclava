@@ -44,10 +44,8 @@ public class SampleCode {
       System.out.println("-samplecode not a directory: " + mSource);
       return;
     }
- //   if (offlineMode)
- //     writeIndexOnly(f, mDest, offlineMode);
- //   else
-      writeDirectory(f, mDest);
+    
+    writeDirectory(f, mDest, offlineMode);
   }
 
   public static String convertExtension(String s, String ext) {
@@ -65,8 +63,12 @@ public class SampleCode {
     }
     return false;
   }
-
+  
   public void writeDirectory(File dir, String relative) {
+    writeDirectory(dir, relative, false);
+  }
+
+  public void writeDirectory(File dir, String relative, boolean offline) {
     TreeSet<String> dirs = new TreeSet<String>();
     TreeSet<String> files = new TreeSet<String>();
 
@@ -116,11 +118,6 @@ public class SampleCode {
       i++;
     }
 
-    ClearPage.write(hdf, "sampleindex.cs", relative + "/index" + Doclava.htmlExtension);
-  }
-
-  public void writeIndexOnly(File dir, String relative, Boolean offline) {
-    Data hdf = writeIndex(dir);
     if (!offline) relative = "/" + relative;
     ClearPage.write(hdf, "sampleindex.cs", relative + "index" + Doclava.htmlExtension);
   }
