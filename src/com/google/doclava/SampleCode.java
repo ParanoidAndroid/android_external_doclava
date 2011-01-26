@@ -96,7 +96,7 @@ public class SampleCode {
         }
         // else ignored
       } else if (f.isDirectory()) {
-        writeDirectory(f, relative + name + "/");
+        writeDirectory(f, relative + name + "/", offline);
         dirs.add(name);
       }
     }
