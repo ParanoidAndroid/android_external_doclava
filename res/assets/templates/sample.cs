@@ -17,7 +17,7 @@
 <div id="jd-content">
 <p><a href="index.html">&larr; Back</a></p>
 
-<p>The file containing the source code shown below is located in the corresponding directory in <code>&lt;sdk&gt;/platforms/android-&lt;version&gt;/samples/...</code></p>
+<p>The file containing the source code shown below is located in the corresponding directory in <code>&lt;sdk&gt;/samples/android-&lt;version&gt;/...</code></p>
 
 <!-- begin file contents -->
 <pre><?cs var:fileContents ?></pre>
