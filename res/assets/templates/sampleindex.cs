@@ -15,7 +15,7 @@
  </div>
 
 <div id="jd-content">
-<p><a href="../index.html">&larr; Back</a></p>
+<p><a href="../../browser.html?tag=sample">&larr; Back</a></p>
 
 <?cs var:summary ?>
 
