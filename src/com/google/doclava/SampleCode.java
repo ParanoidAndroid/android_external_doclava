@@ -53,7 +53,7 @@ public class SampleCode {
   }
 
   public static String[] IMAGES = {".png", ".jpg", ".gif"};
-  public static String[] TEMPLATED = {".java", ".xml"};
+  public static String[] TEMPLATED = {".java", ".xml", ".aidl", ".rs"};
 
   public static boolean inList(String s, String[] list) {
     for (String t : list) {
