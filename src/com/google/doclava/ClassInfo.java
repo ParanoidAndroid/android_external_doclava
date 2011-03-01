@@ -663,21 +663,26 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
   /** Even indirectly */
   public boolean isDerivedFrom(ClassInfo cl) {
+    return isDerivedFrom(cl.qualifiedName());
+  }
+
+  /** Even indirectly */
+  public boolean isDerivedFrom(String qualifiedName) {
     ClassInfo dad = this.superclass();
     if (dad != null) {
-      if (dad.equals(cl)) {
+      if (dad.mQualifiedName.equals(qualifiedName)) {
         return true;
       } else {
-        if (dad.isDerivedFrom(cl)) {
+        if (dad.isDerivedFrom(qualifiedName)) {
           return true;
         }
       }
     }
     for (ClassInfo iface : interfaces()) {
-      if (iface.equals(cl)) {
+      if (iface.mQualifiedName.equals(qualifiedName)) {
         return true;
       } else {
-        if (iface.isDerivedFrom(cl)) {
+        if (iface.isDerivedFrom(qualifiedName)) {
           return true;
         }
       }
