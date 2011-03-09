@@ -27,7 +27,6 @@ public class ConstructorInfo implements AbstractMethodInfo {
   private String mType;
   private boolean mIsStatic;
   private boolean mIsFinal;
-  private String mDeprecated;
   private boolean mIsDeprecated;
   private String mScope;
   private List<String> mExceptions;
@@ -36,13 +35,12 @@ public class ConstructorInfo implements AbstractMethodInfo {
   private ClassInfo mClass;
 
   public ConstructorInfo(String name, String type, boolean isStatic, boolean isFinal,
-      String deprecated, String scope, SourcePositionInfo pos, ClassInfo clazz) {
+      boolean deprecated, String scope, SourcePositionInfo pos, ClassInfo clazz) {
     mName = name;
     mType = type;
     mIsStatic = isStatic;
     mIsFinal = isFinal;
-    mDeprecated = deprecated;
-    mIsDeprecated = "deprecated".equals(deprecated);
+    mIsDeprecated = deprecated;
     mScope = scope;
     mExceptions = new ArrayList<String>();
     mParameters = new ArrayList<ParameterInfo>();
@@ -95,7 +93,7 @@ public class ConstructorInfo implements AbstractMethodInfo {
     return qualifiedName() + '(' + params + ')';
   }
 
-  public boolean isConsistent(ConstructorInfo mInfo) {
+  public boolean isConsistentConstructor(ConstructorInfo mInfo) {
     boolean consistent = true;
 
     if (mIsFinal != mInfo.mIsFinal) {

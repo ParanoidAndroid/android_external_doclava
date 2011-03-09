@@ -17,8 +17,10 @@
 package com.google.doclava.apicheck;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Set;
@@ -26,6 +28,7 @@ import java.util.Stack;
 
 import com.google.doclava.Errors;
 import com.google.doclava.Errors.ErrorMessage;
+import com.google.doclava.Stubs;
 
 public class ApiCheck {
   // parse out and consume the -whatever command line flags
@@ -55,11 +58,17 @@ public class ApiCheck {
   }
 
   public static void main(String[] originalArgs) {
-    ApiCheck acheck = new ApiCheck();
-    Report report = acheck.checkApi(originalArgs);
-   
-    Errors.printErrors(report.errors());
-    System.exit(report.code);
+    if (originalArgs.length == 3 && "-convert".equals(originalArgs[0])) {
+      System.exit(convertToApi(originalArgs[1], originalArgs[2]));
+    } else if (originalArgs.length == 3 && "-convert2xml".equals(originalArgs[0])) {
+      System.exit(convertToXml(originalArgs[1], originalArgs[2]));
+    } else {
+      ApiCheck acheck = new ApiCheck();
+      Report report = acheck.checkApi(originalArgs);
+
+      Errors.printErrors(report.errors());
+      System.exit(report.code);
+    }
   }
   
   /**
@@ -112,39 +121,73 @@ public class ApiCheck {
     return new Report(Errors.hadError ? 1 : 0, Errors.getErrors());
   }
 
-  public ApiInfo parseApi(String xmlFile) throws ApiParseException {
-    FileInputStream fileStream = null;
+  public static ApiInfo parseApi(String filename) throws ApiParseException {
+    InputStream stream = null;
+    // try it as our format
     try {
-      fileStream = new FileInputStream(xmlFile);
-      return XmlApiFile.parseApi(fileStream);
+      stream = new FileInputStream(filename);
     } catch (IOException e) {
-      throw new ApiParseException("Could not open file for parsing: " + xmlFile, e);
-    } finally {
-      if (fileStream != null) {
-        try {
-          fileStream.close();
-        } catch (IOException ignored) {}
+      throw new ApiParseException("Could not open file for parsing: " + filename, e);
+    }
+    try {
+      return ApiFile.parseApi(filename, stream);
+    } catch (ApiParseException ignored) {
+      if (false) {
+        System.out.println("stopping");
+        ignored.printStackTrace();
+        return null;
       }
+    } finally {
+      try {
+        stream.close();
+      } catch (IOException ignored) {}
+    }
+    // try it as xml
+    try {
+      stream = new FileInputStream(filename);
+    } catch (IOException e) {
+      throw new ApiParseException("Could not open file for parsing: " + filename, e);
+    }
+    try {
+      return XmlApiFile.parseApi(stream);
+    } finally {
+      try {
+        stream.close();
+      } catch (IOException ignored) {}
     }
   }
-  
-  public ApiInfo parseApi(URL xmlURL) throws ApiParseException {
-    InputStream xmlStream = null;
+
+  public ApiInfo parseApi(URL url) throws ApiParseException {
+    InputStream stream = null;
+    // try it as our format
     try {
-      xmlStream = xmlURL.openStream();
-      return XmlApiFile.parseApi(xmlStream);
+      stream = url.openStream();
     } catch (IOException e) {
-      throw new ApiParseException("Could not open stream for parsing: " + xmlURL,e);
+      throw new ApiParseException("Could not open stream for parsing: " + url, e);
+    }
+    try {
+      return ApiFile.parseApi(url.toString(), stream);
+    } catch (ApiParseException ignored) {
     } finally {
-      if (xmlStream != null) {
-        try {
-          xmlStream.close();
-        } catch (IOException ignored) {}
-      }
+      try {
+        stream.close();
+      } catch (IOException ignored) {}
+    }
+    // try it as xml
+    try {
+      stream = url.openStream();
+    } catch (IOException e) {
+      throw new ApiParseException("Could not open stream for parsing: " + url, e);
+    }
+    try {
+      return XmlApiFile.parseApi(stream);
+    } finally {
+      try {
+        stream.close();
+      } catch (IOException ignored) {}
     }
   }
-  
-  
+
   public class Report {
     private int code;
     private Set<ErrorMessage> errors;
@@ -162,4 +205,49 @@ public class ApiCheck {
       return errors;
     }
   }
+
+  static int convertToApi(String src, String dst) {
+    ApiInfo api;
+    try {
+      api = parseApi(src);
+    } catch (ApiParseException e) {
+      e.printStackTrace();
+      System.err.println("Error parsing API: " + src);
+      return 1;
+    }
+
+    PrintStream apiWriter = null;
+    try {
+      apiWriter = new PrintStream(dst);
+    } catch (FileNotFoundException ex) {
+      System.err.println("can't open file: " + dst);
+    }
+
+    Stubs.writeApi(apiWriter, api.getPackages().values());
+
+    return 0;
+  }
+
+  static int convertToXml(String src, String dst) {
+    ApiInfo api;
+    try {
+      api = parseApi(src);
+    } catch (ApiParseException e) {
+      e.printStackTrace();
+      System.err.println("Error parsing API: " + src);
+      return 1;
+    }
+
+    PrintStream apiWriter = null;
+    try {
+      apiWriter = new PrintStream(dst);
+    } catch (FileNotFoundException ex) {
+      System.err.println("can't open file: " + dst);
+    }
+
+    Stubs.writeXml(apiWriter, api.getPackages().values());
+
+    return 0;
+  }
+
 }

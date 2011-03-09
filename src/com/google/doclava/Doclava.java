@@ -192,7 +192,7 @@ public class Doclava {
         }
       } else if (a[0].equals("-sdkvalues")) {
         sdkValuePath = a[1];
-      } else if (a[0].equals("-apixml")) {
+      } else if (a[0].equals("-api")) {
         apiFile = a[1];
       } else if (a[0].equals("-nodocs")) {
         generateDocs = false;
@@ -305,7 +305,7 @@ public class Doclava {
 
     // Stubs
     if (stubsDir != null || apiFile != null) {
-      Stubs.writeStubsAndXml(stubsDir, apiFile, stubPackages);
+      Stubs.writeStubsAndApi(stubsDir, apiFile, stubPackages);
     }
 
     Errors.printErrors();
@@ -505,7 +505,7 @@ public class Doclava {
     if (option.equals("-sdkvalues")) {
       return 2;
     }
-    if (option.equals("-apixml")) {
+    if (option.equals("-api")) {
       return 2;
     }
     if (option.equals("-nodocs")) {

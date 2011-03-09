@@ -17,15 +17,33 @@
 package com.google.doclava.apicheck;
 
 public final class ApiParseException extends Exception {
+  public String file;
+  public int line;
+
+  public ApiParseException() {
+  }
+  
+  public ApiParseException(String message) {
+    super(message);
+  }
+
   public ApiParseException(String message, Exception cause) {
     super(message, cause);
+    if (cause instanceof ApiParseException) {
+        this.line = ((ApiParseException)cause).line;
+    }
   }
-  
-  public ApiParseException() {
-    
-  }
-  
-  ApiParseException(String message) {
+
+  public ApiParseException(String message, int line) {
     super(message);
+    this.line = line;
+  }
+  
+  public String getMessage() {
+    if (line > 0) {
+      return super.getMessage() + " line " + line;
+    } else {
+      return super.getMessage();
+    }
   }
 }

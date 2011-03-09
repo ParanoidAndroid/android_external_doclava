@@ -16,6 +16,7 @@
 
 package com.google.doclava;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,21 +28,19 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
 public class Stubs {
-  private static HashSet<ClassInfo> notStrippable;
-
-  public static void writeStubsAndXml(String stubsDir, String xmlFile,
+  public static void writeStubsAndApi(String stubsDir, String apiFile,
       HashSet<String> stubPackages) {
     // figure out which classes we need
-    notStrippable = new HashSet<ClassInfo>();
+    final HashSet<ClassInfo> notStrippable = new HashSet<ClassInfo>();
     ClassInfo[] all = Converter.allClasses();
-    PrintStream xmlWriter = null;
-    if (xmlFile != null) {
+    PrintStream apiWriter = null;
+    if (apiFile != null) {
       try {
-        File xml = new File(xmlFile);
+        File xml = new File(apiFile);
         xml.getParentFile().mkdirs();
-        xmlWriter = new PrintStream(xml);
+        apiWriter = new PrintStream(xml);
       } catch (FileNotFoundException e) {
-        Errors.error(Errors.IO_ERROR, new SourcePositionInfo(xmlFile, 0, 0),
+        Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
             "Cannot open file for write.");
       }
     }
@@ -125,10 +124,10 @@ public class Stubs {
         if (stubPackages == null || stubPackages.contains(cl.containingPackage().name())) {
           // write out the stubs
           if (stubsDir != null) {
-            writeClassFile(stubsDir, cl);
+            writeClassFile(stubsDir, notStrippable, cl);
           }
           // build class list for xml file
-          if (xmlWriter != null) {
+          if (apiWriter != null) {
             if (packages.containsKey(cl.containingPackage())) {
               packages.get(cl.containingPackage()).add(cl);
             } else {
@@ -141,10 +140,10 @@ public class Stubs {
       }
     }
 
-    // write out the XML
-    if (xmlWriter != null) {
-      writeXML(xmlWriter, packages, notStrippable);
-      xmlWriter.close();
+    // write out the Api
+    if (apiWriter != null) {
+      writeApi(apiWriter, packages, notStrippable);
+      apiWriter.close();
     }
   }
 
@@ -287,7 +286,7 @@ public class Stubs {
     return dir + cl.name() + ".java";
   }
 
-  static void writeClassFile(String stubsDir, ClassInfo cl) {
+  static void writeClassFile(String stubsDir, HashSet<ClassInfo> notStrippable, ClassInfo cl) {
     // inner classes are written by their containing class
     if (cl.containingClass() != null) {
       return;
@@ -307,7 +306,7 @@ public class Stubs {
     PrintStream stream = null;
     try {
       stream = new PrintStream(file);
-      writeClassFile(stream, cl);
+      writeClassFile(stream, notStrippable, cl);
     } catch (FileNotFoundException e) {
       System.err.println("error writing file: " + filename);
     } finally {
@@ -317,15 +316,15 @@ public class Stubs {
     }
   }
 
-  static void writeClassFile(PrintStream stream, ClassInfo cl) {
+  static void writeClassFile(PrintStream stream, HashSet<ClassInfo> notStrippable, ClassInfo cl) {
     PackageInfo pkg = cl.containingPackage();
     if (pkg != null) {
       stream.println("package " + pkg.name() + ";");
     }
-    writeClass(stream, cl);
+    writeClass(stream, notStrippable, cl);
   }
 
-  static void writeClass(PrintStream stream, ClassInfo cl) {
+  static void writeClass(PrintStream stream, HashSet<ClassInfo> notStrippable, ClassInfo cl) {
     writeAnnotations(stream, cl.annotations());
 
     stream.print(cl.scope() + " ");
@@ -399,7 +398,7 @@ public class Stubs {
 
     for (ClassInfo inner : cl.getRealInnerClasses()) {
       if (notStrippable.contains(inner) && !inner.isDocOnly()) {
-        writeClass(stream, inner);
+        writeClass(stream, notStrippable, inner);
       }
     }
 
@@ -594,7 +593,7 @@ public class Stubs {
 
   // Returns 'true' if the method is an @Override of a visible parent
   // method implementation, and thus does not affect the API.
-  static boolean methodIsOverride(MethodInfo mi) {
+  static boolean methodIsOverride(HashSet<ClassInfo> notStrippable, MethodInfo mi) {
     // Abstract/static/final methods are always listed in the API description
     if (mi.isAbstract() || mi.isStatic() || mi.isFinal()) {
       return false;
@@ -737,7 +736,7 @@ public class Stubs {
   }
 
   static void writeXML(PrintStream xmlWriter, HashMap<PackageInfo, List<ClassInfo>> allClasses,
-      HashSet notStrippable) {
+      HashSet<ClassInfo> notStrippable) {
     // extract the set of packages, sort them by name, and write them out in that order
     Set<PackageInfo> allClassKeys = allClasses.keySet();
     PackageInfo[] allPackages = allClassKeys.toArray(new PackageInfo[allClassKeys.size()]);
@@ -750,8 +749,25 @@ public class Stubs {
     xmlWriter.println("</api>");
   }
 
-  static void writePackageXML(PrintStream xmlWriter, PackageInfo pack, List<ClassInfo> classList,
-      HashSet notStrippable) {
+  public static void writeXml(PrintStream xmlWriter, Collection<PackageInfo> pkgs) {
+    final PackageInfo[] packages = pkgs.toArray(new PackageInfo[pkgs.size()]);
+    Arrays.sort(packages, PackageInfo.comparator);
+
+    HashSet<ClassInfo> notStrippable = new HashSet();
+    for (PackageInfo pkg: packages) {
+      for (ClassInfo cl: pkg.allClasses().values()) {
+        notStrippable.add(cl);
+      }
+    }
+    xmlWriter.println("<api>");
+    for (PackageInfo pkg: packages) {
+      writePackageXML(xmlWriter, pkg, pkg.allClasses().values(), notStrippable);
+    }
+    xmlWriter.println("</api>");
+  }
+
+  static void writePackageXML(PrintStream xmlWriter, PackageInfo pack,
+      Collection<ClassInfo> classList, HashSet<ClassInfo> notStrippable) {
     ClassInfo[] classes = classList.toArray(new ClassInfo[classList.size()]);
     Arrays.sort(classes, ClassInfo.comparator);
     // Work around the bogus "Array" class we invent for
@@ -770,7 +786,7 @@ public class Stubs {
 
   }
 
-  static void writeClassXML(PrintStream xmlWriter, ClassInfo cl, HashSet notStrippable) {
+  static void writeClassXML(PrintStream xmlWriter, ClassInfo cl, HashSet<ClassInfo> notStrippable) {
     String scope = cl.scope();
     String deprecatedString = "";
     String declString = (cl.isInterface()) ? "interface" : "class";
@@ -809,7 +825,7 @@ public class Stubs {
     MethodInfo[] methods = cl.allSelfMethods();
     Arrays.sort(methods, MethodInfo.comparator);
     for (MethodInfo mi : methods) {
-      if (!methodIsOverride(mi)) {
+      if (!methodIsOverride(notStrippable, mi)) {
         writeMethodXML(xmlWriter, mi);
       }
     }
@@ -933,6 +949,260 @@ public class Stubs {
     returnString = returnString.replaceAll("\"", "&quot;");
     returnString = returnString.replaceAll("'", "&pos;");
     return returnString;
+  }
+
+  public static void writeApi(PrintStream apiWriter, Collection<PackageInfo> pkgs) {
+    final PackageInfo[] packages = pkgs.toArray(new PackageInfo[pkgs.size()]);
+    Arrays.sort(packages, PackageInfo.comparator);
+
+    HashSet<ClassInfo> notStrippable = new HashSet();
+    for (PackageInfo pkg: packages) {
+      for (ClassInfo cl: pkg.allClasses().values()) {
+        notStrippable.add(cl);
+      }
+    }
+    for (PackageInfo pkg: packages) {
+      writePackageApi(apiWriter, pkg, pkg.allClasses().values(), notStrippable);
+    }
+  }
+
+  static void writeApi(PrintStream apiWriter, HashMap<PackageInfo, List<ClassInfo>> allClasses,
+      HashSet<ClassInfo> notStrippable) {
+    // extract the set of packages, sort them by name, and write them out in that order
+    Set<PackageInfo> allClassKeys = allClasses.keySet();
+    PackageInfo[] allPackages = allClassKeys.toArray(new PackageInfo[allClassKeys.size()]);
+    Arrays.sort(allPackages, PackageInfo.comparator);
+
+    for (PackageInfo pack : allPackages) {
+      writePackageApi(apiWriter, pack, allClasses.get(pack), notStrippable);
+    }
+  }
+
+  static void writePackageApi(PrintStream apiWriter, PackageInfo pack,
+      Collection<ClassInfo> classList, HashSet<ClassInfo> notStrippable) {
+    // Work around the bogus "Array" class we invent for
+    // Arrays.copyOf's Class<? extends T[]> newType parameter. (http://b/2715505)
+    if (pack.name().equals(PackageInfo.DEFAULT_PACKAGE)) {
+      return;
+    }
+
+    apiWriter.print("package ");
+    apiWriter.print(pack.qualifiedName());
+    apiWriter.print(" {\n\n");
+
+    ClassInfo[] classes = classList.toArray(new ClassInfo[classList.size()]);
+    Arrays.sort(classes, ClassInfo.comparator);
+    for (ClassInfo cl : classes) {
+      writeClassApi(apiWriter, cl, notStrippable);
+    }
+
+    apiWriter.print("}\n\n");
+  }
+
+  static void writeClassApi(PrintStream apiWriter, ClassInfo cl, HashSet<ClassInfo> notStrippable) {
+    boolean first;
+
+    apiWriter.print("  ");
+    apiWriter.print(cl.scope());
+    if (cl.isStatic()) {
+      apiWriter.print(" static");
+    }
+    if (cl.isFinal()) {
+      apiWriter.print(" final");
+    }
+    if (cl.isAbstract()) {
+      apiWriter.print(" abstract");
+    }
+    if (cl.isDeprecated()) {
+      apiWriter.print(" deprecated");
+    }
+    apiWriter.print(" ");
+    apiWriter.print(cl.isInterface() ? "interface" : "class");
+    apiWriter.print(" ");
+    apiWriter.print(cl.name());
+
+    if (!cl.isInterface()
+        && !"java.lang.Object".equals(cl.qualifiedName())
+        && cl.realSuperclass() != null
+        && !"java.lang.Object".equals(cl.realSuperclass().qualifiedName())) {
+      apiWriter.print(" extends ");
+      apiWriter.print(cl.realSuperclass().qualifiedName());
+    }
+
+    ClassInfo[] interfaces = cl.realInterfaces();
+    Arrays.sort(interfaces, ClassInfo.comparator);
+    first = true;
+    for (ClassInfo iface : interfaces) {
+      if (notStrippable.contains(iface)) {
+        if (first) {
+          apiWriter.print(" implements");
+          first = false;
+        }
+        apiWriter.print(" ");
+        apiWriter.print(iface.qualifiedName());
+      }
+    }
+
+    apiWriter.print(" {\n");
+
+    MethodInfo[] constructors = cl.constructors();
+    Arrays.sort(constructors, MethodInfo.comparator);
+    for (MethodInfo mi : constructors) {
+      writeConstructorApi(apiWriter, mi);
+    }
+
+    MethodInfo[] methods = cl.allSelfMethods();
+    Arrays.sort(methods, MethodInfo.comparator);
+    for (MethodInfo mi : methods) {
+      if (!methodIsOverride(notStrippable, mi)) {
+        writeMethodApi(apiWriter, mi);
+      }
+    }
+
+    FieldInfo[] fields = cl.allSelfFields();
+    Arrays.sort(fields, FieldInfo.comparator);
+    for (FieldInfo fi : fields) {
+      writeFieldApi(apiWriter, fi);
+    }
+
+    apiWriter.print("  }\n\n");
+  }
+
+  static void writeConstructorApi(PrintStream apiWriter, MethodInfo mi) {
+    apiWriter.print("    ctor ");
+    apiWriter.print(mi.scope());
+    if (mi.isDeprecated()) {
+      apiWriter.print(" deprecated");
+    }
+    apiWriter.print(" ");
+    apiWriter.print(mi.name());
+
+    writeParametersApi(apiWriter, mi, mi.parameters());
+    writeThrowsApi(apiWriter, mi.thrownExceptions());
+    apiWriter.print(";\n");
+  }
+
+  static void writeMethodApi(PrintStream apiWriter, MethodInfo mi) {
+    apiWriter.print("    method ");
+    apiWriter.print(mi.scope());
+    if (mi.isStatic()) {
+      apiWriter.print(" static");
+    }
+    if (mi.isFinal()) {
+      apiWriter.print(" final");
+    }
+    if (mi.isAbstract()) {
+      apiWriter.print(" abstract");
+    }
+    if (mi.isDeprecated()) {
+      apiWriter.print(" deprecated");
+    }
+    if (mi.isSynchronized()) {
+      apiWriter.print(" synchronized");
+    }
+    apiWriter.print(" ");
+    if (mi.returnType() == null) {
+      apiWriter.print("void");
+    } else {
+      apiWriter.print(fullParameterTypeName(mi, mi.returnType(), false));
+    }
+    apiWriter.print(" ");
+    apiWriter.print(mi.name());
+
+    writeParametersApi(apiWriter, mi, mi.parameters());
+    writeThrowsApi(apiWriter, mi.thrownExceptions());
+
+    apiWriter.print(";\n");
+  }
+
+  static void writeParametersApi(PrintStream apiWriter, MethodInfo method, ParameterInfo[] params) {
+    apiWriter.print("(");
+
+    final int N = params.length;
+    for (int i=0; i<N; i++) {
+      if (i != 0) {
+        apiWriter.print(", ");
+      }
+      final ParameterInfo pi = params[i];
+      apiWriter.print(fullParameterTypeName(method, pi.type(), i == N-1));
+      // turn on to write the names too
+      if (false) {
+        apiWriter.print(" ");
+        apiWriter.print(pi.name());
+      }
+    }
+
+    apiWriter.print(")");
+  }
+
+  static void writeThrowsApi(PrintStream apiWriter, ClassInfo[] exceptions) {
+    // write in a canonical order
+    exceptions = exceptions.clone();
+    Arrays.sort(exceptions, ClassInfo.comparator);
+    final int N = exceptions.length;
+    boolean first = true;
+    for (int i=0; i<N; i++) {
+      final ClassInfo ex = exceptions[i];
+      // Turn this off, b/c we need to regenrate the old xml files.
+      if (true || !"java.lang.RuntimeException".equals(ex.qualifiedName())
+          && !ex.isDerivedFrom("java.lang.RuntimeException")) {
+        if (first) {
+          apiWriter.print(" throws ");
+          first = false;
+        } else {
+          apiWriter.print(", ");
+        }
+        apiWriter.print(ex.qualifiedName());
+      }
+    }
+  }
+
+  static void writeFieldApi(PrintStream apiWriter, FieldInfo fi) {
+    apiWriter.print("    field ");
+    apiWriter.print(fi.scope());
+    if (fi.isStatic()) {
+      apiWriter.print(" static");
+    }
+    if (fi.isFinal()) {
+      apiWriter.print(" final");
+    }
+    if (fi.isDeprecated()) {
+      apiWriter.print(" deprecated");
+    }
+    if (fi.isTransient()) {
+      apiWriter.print(" transient");
+    }
+    if (fi.isVolatile()) {
+      apiWriter.print(" volatile");
+    }
+
+    apiWriter.print(" ");
+    apiWriter.print(fi.type().qualifiedTypeName() + fi.type().dimension());
+
+    apiWriter.print(" ");
+    apiWriter.print(fi.name());
+
+    Object val = null;
+    if (fi.isConstant() && fieldIsInitialized(fi)) {
+      apiWriter.print(" = ");
+      apiWriter.print(fi.constantLiteralValue());
+      val = fi.constantValue();
+    }
+
+    apiWriter.print(";");
+
+    if (val != null) {
+      if (val instanceof Integer && "char".equals(fi.type().qualifiedTypeName())) {
+        apiWriter.format(" // 0x%04x '%s'", val,
+            FieldInfo.javaEscapeString("" + ((char)((Integer)val).intValue())));
+      } else if (val instanceof Byte || val instanceof Short || val instanceof Integer) {
+        apiWriter.format(" // 0x%x", val);
+      } else if (val instanceof Long) {
+        apiWriter.format(" // 0x%xL", val);
+      }
+    }
+
+    apiWriter.print("\n");
   }
 
   static String fullParameterTypeName(MethodInfo method, TypeInfo type, boolean isLast) {

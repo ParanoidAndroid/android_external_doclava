@@ -16,6 +16,7 @@
 
 package com.google.doclava;
 
+import com.google.doclava.apicheck.ApiParseException;
 import com.google.clearsilver.jsilver.data.Data;
 import java.util.Comparator;
 
@@ -139,6 +140,7 @@ public class FieldInfo extends MemberInfo {
         str = val.toString() + "L";
       } else if (val instanceof Character) {
         str = String.format("\'\\u%04x\'", val);
+        System.out.println("str=" + str);
       } else if (val instanceof String) {
         str = "\"" + javaEscapeString((String) val) + "\"";
       } else {
@@ -158,11 +160,11 @@ public class FieldInfo extends MemberInfo {
    */
   private static String canonicalizeFloatingPoint(String val, String suffix) {
     if (val.equals("Infinity")) {
-      return "(1.0" + suffix + " / 0.0" + suffix + ")";
+      return "(1.0" + suffix + "/0.0" + suffix + ")";
     } else if (val.equals("-Infinity")) {
-      return "(-1.0" + suffix + " / 0.0" + suffix + ")";
+      return "(-1.0" + suffix + "/0.0" + suffix + ")";
     } else if (val.equals("NaN")) {
-      return "(0.0" + suffix + " / 0.0" + suffix + ")";
+      return "(0.0" + suffix + "/0.0" + suffix + ")";
     }
 
     String str = val.toString();
@@ -210,6 +212,107 @@ public class FieldInfo extends MemberInfo {
     return result;
   }
 
+  public static String javaUnescapeString(String str) throws ApiParseException {
+    final int N = str.length();
+    check: {
+      for (int i=0; i<N; i++) {
+        final char c = str.charAt(i);
+        if (c == '\\') {
+          break check;
+        }
+      }
+      return str;
+    }
+
+    final StringBuilder buf = new StringBuilder(str.length());
+    char escaped = 0;
+    final int START = 0;
+    final int CHAR1 = 1;
+    final int CHAR2 = 2;
+    final int CHAR3 = 3;
+    final int CHAR4 = 4;
+    final int ESCAPE = 5;
+    int state = START;
+
+    for (int i=0; i<N; i++) {
+      final char c = str.charAt(i);
+      switch (state) {
+        case START:
+          if (c == '\\') {
+            state = ESCAPE;
+          } else {
+            buf.append(c);
+          }
+          break;
+        case ESCAPE:
+          switch (c) {
+            case '\\':
+              buf.append('\\');
+              state = START;
+              break;
+            case 't':
+              buf.append('\t');
+              state = START;
+              break;
+            case 'b':
+              buf.append('\b');
+              state = START;
+              break;
+            case 'r':
+              buf.append('\r');
+              state = START;
+              break;
+            case 'n':
+              buf.append('\n');
+              state = START;
+              break;
+            case 'f':
+              buf.append('\f');
+              state = START;
+              break;
+            case '\'':
+              buf.append('\'');
+              state = START;
+              break;
+            case '\"':
+              buf.append('\"');
+              state = START;
+              break;
+            case 'u':
+              state = CHAR1;
+              escaped = 0;
+              break;
+          }
+          break;
+        case CHAR1:
+        case CHAR2:
+        case CHAR3:
+        case CHAR4:
+          escaped <<= 4;
+          if (c >= '0' && c <= '9') {
+            escaped |= c - '0';
+          } else if (c >= 'a' && c <= 'f') {
+            escaped |= 10 + (c - 'a');
+          } else if (c >= 'A' && c <= 'F') {
+            escaped |= 10 + (c - 'A');
+          } else {
+            throw new ApiParseException("bad escape sequence: '" + c + "' at pos " + i + " in: \""
+                + str + "\"");
+          }
+          if (state == CHAR4) {
+            buf.append(escaped);
+            state = START;
+          } else {
+            state++;
+          }
+          break;
+      }
+    }
+    if (state != START) {
+      throw new ApiParseException("unfinished escape sequence: " + str);
+    }
+    return buf.toString();
+  }
 
   public void makeHDF(Data data, String base) {
     data.setValue(base + ".kind", kind());
@@ -302,13 +405,7 @@ public class FieldInfo extends MemberInfo {
     if (mConstantValue == null) {
       return true;
     }
-    
-    // TODO: This method is called through from an XML comparison only right now,
-    // and mConstantValue is always a String. Get rid of this assertion.
-    if (!(mConstantValue instanceof String && other.mConstantValue instanceof String)) {
-      throw new AssertionError("Bad type for field value");
-    }
-    
+
     return mType.equals(other.mType)
         && mConstantValue.equals(other.mConstantValue);
   }

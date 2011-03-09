@@ -309,6 +309,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   public MethodInfo[] constructors() {
     if (mConstructors == null) {
       MethodInfo[] methods = mAllConstructors;
+      if (methods == null) {
+        return new MethodInfo[0];
+      }
       ArrayList<MethodInfo> ctors = new ArrayList<MethodInfo>();
       for (int i = 0; i < methods.length; i++) {
         MethodInfo m = methods[i];
@@ -332,6 +335,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
   public TagInfo[] firstSentenceTags() {
     return comment().briefTags();
+  }
+
+  public void setDeprecated(boolean deprecated) {
+    mDeprecatedKnown = true;
+    mIsDeprecated = deprecated;
   }
 
   public boolean isDeprecated() {
@@ -530,19 +538,12 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
   public void addMethod(MethodInfo method) {
     mApiCheckMethods.put(method.getHashableName(), method);
-    
-    if (mAllSelfMethods == null) {
-      mAllSelfMethods = new MethodInfo[] { method };
-      return;
-    }
-    
-    MethodInfo[] methods = new MethodInfo[mAllSelfMethods.length + 1];
-    int i = 0;
-    for (MethodInfo m : mAllSelfMethods) {
-      methods[i++] = m;
-    }
-    methods[i] = method;
-    mAllSelfMethods = methods;
+
+    MethodInfo[] old = mAllSelfMethods;
+    mAllSelfMethods = new MethodInfo[old.length+1];
+    System.arraycopy(old, 0, mAllSelfMethods, 0, old.length);
+    mAllSelfMethods[mAllSelfMethods.length-1] = method;
+    mSelfMethods = null; // flush this, hopefully it hasn't been used yet.
   }
   
   public void setContainingPackage(PackageInfo pkg) {
@@ -1415,10 +1416,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private ClassInfo[] mInterfaces;
   private TypeInfo[] mRealInterfaceTypes;
   private ClassInfo[] mInnerClasses;
-  private MethodInfo[] mAllConstructors;
-  private MethodInfo[] mAllSelfMethods;
+  private MethodInfo[] mAllConstructors = new MethodInfo[0];
+  private MethodInfo[] mAllSelfMethods = new MethodInfo[0];
   private MethodInfo[] mAnnotationElements; // if this class is an annotation
-  private FieldInfo[] mAllSelfFields;
+  private FieldInfo[] mAllSelfFields = new FieldInfo[0];
   private FieldInfo[] mEnumConstants;
   private PackageInfo mContainingPackage;
   private ClassInfo mContainingClass;
@@ -1446,10 +1447,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private boolean mIsDeprecated;
   
   // TODO: Temporary members from apicheck migration.
+  private HashMap<String, MethodInfo> mApiCheckConstructors = new HashMap<String, MethodInfo>();
   private HashMap<String, MethodInfo> mApiCheckMethods = new HashMap<String, MethodInfo>();
   private HashMap<String, FieldInfo> mApiCheckFields = new HashMap<String, FieldInfo>();
-  private HashMap<String, ConstructorInfo> mApiCheckConstructors
-      = new HashMap<String, ConstructorInfo>();
   
   /**
    * Returns true if {@code cl} implements the interface {@code iface} either by either being that
@@ -1470,26 +1470,36 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return false;
   }
 
-
   public void addInterface(ClassInfo iface) {
     mRealInterfaces.add(iface);
   }
 
-  public void addConstructor(ConstructorInfo cInfo) {
-    mApiCheckConstructors.put(cInfo.getHashableName(), cInfo);
+  public void addConstructor(MethodInfo ctor) {
+    mApiCheckConstructors.put(ctor.getHashableName(), ctor);
 
+    MethodInfo[] old = mAllConstructors;
+    mAllConstructors = new MethodInfo[old.length+1];
+    System.arraycopy(old, 0, mAllConstructors, 0, old.length);
+    mAllConstructors[mAllConstructors.length-1] = ctor;
+    mConstructors = null; // flush this, hopefully it hasn't been used yet.
   }
 
-  public void addField(FieldInfo fInfo) {
-    mApiCheckFields.put(fInfo.name(), fInfo);
+  public void addField(FieldInfo field) {
+    mApiCheckFields.put(field.name(), field);
 
+    FieldInfo[] old = mAllSelfFields;
+    mAllSelfFields = new FieldInfo[old.length+1];
+    System.arraycopy(old, 0, mAllSelfFields, 0, old.length);
+    mAllSelfFields[mAllSelfFields.length-1] = field;
+    mSelfFields = null; // flush this, hopefully it hasn't been used yet.
   }
 
   public void setSuperClass(ClassInfo superclass) {
+    mRealSuperclass = superclass;
     mSuperclass = superclass;
   }
 
-  public Map<String, ConstructorInfo> allConstructorsMap() {
+  public Map<String, MethodInfo> allConstructorsMap() {
     return mApiCheckConstructors;
   }
 
@@ -1589,7 +1599,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       }
     }
 
-    for (ConstructorInfo mInfo : mApiCheckConstructors.values()) {
+    for (MethodInfo mInfo : mApiCheckConstructors.values()) {
       if (cl.mApiCheckConstructors.containsKey(mInfo.getHashableName())) {
         if (!mInfo.isConsistent(cl.mApiCheckConstructors.get(mInfo.getHashableName()))) {
           consistent = false;
@@ -1600,7 +1610,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
         consistent = false;
       }
     }
-    for (ConstructorInfo mInfo : cl.mApiCheckConstructors.values()) {
+    for (MethodInfo mInfo : cl.mApiCheckConstructors.values()) {
       if (!mApiCheckConstructors.containsKey(mInfo.getHashableName())) {
         Errors.error(Errors.ADDED_METHOD, mInfo.position(), "Added public constructor "
             + mInfo.prettySignature());
@@ -1705,7 +1715,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   
   public boolean hasConstructor(MethodInfo constructor) {
     String name = constructor.getHashableName();
-    for (ConstructorInfo ctor : mApiCheckConstructors.values()) {
+    for (MethodInfo ctor : mApiCheckConstructors.values()) {
       if (name.equals(ctor.getHashableName())) {
         return true;
       }

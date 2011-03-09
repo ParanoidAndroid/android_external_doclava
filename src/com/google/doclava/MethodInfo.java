@@ -259,8 +259,9 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     // Explicitly coerce 'final' state of Java6-compiled enum values() method, to match
     // the Java5-emitted base API description.
     super(rawCommentText, name, signature, containingClass, realContainingClass, isPublic,
-        isProtected, isPackagePrivate, isPrivate, ((name.equals("values") && containingClass
-            .isEnum()) ? true : isFinal), isStatic, isSynthetic, kind, position, annotations);
+        isProtected, isPackagePrivate, isPrivate,
+        ((name.equals("values") && containingClass.isEnum()) ? true : isFinal),
+        isStatic, isSynthetic, kind, position, annotations);
 
     // The underlying MethodDoc for an interface's declared methods winds up being marked
     // non-abstract. Correct that here by looking at the immediate-parent class, and marking
@@ -726,7 +727,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   
   public boolean isConsistent(MethodInfo mInfo) {
     boolean consistent = true;
-    if (!this.mReturnType.equals(mInfo.mReturnType)) {
+    if (this.mReturnType != mInfo.mReturnType && !this.mReturnType.equals(mInfo.mReturnType)) {
       consistent = false;
       Errors.error(Errors.CHANGED_TYPE, mInfo.position(), "Method " + mInfo.qualifiedName()
           + " has changed return type from " + mReturnType + " to " + mInfo.mReturnType);
@@ -772,7 +773,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
 
     if (!isDeprecated() == mInfo.isDeprecated()) {
       Errors.error(Errors.CHANGED_DEPRECATED, mInfo.position(), "Method " + mInfo.qualifiedName()
-          + " has changed deprecation state");
+          + " has changed deprecation state " + isDeprecated() + " --> " + mInfo.isDeprecated());
       consistent = false;
     }
 

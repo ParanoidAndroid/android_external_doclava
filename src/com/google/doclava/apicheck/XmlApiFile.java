@@ -23,7 +23,6 @@ import com.sun.javadoc.ClassDoc;
 
 import com.google.doclava.AnnotationInstanceInfo;
 import com.google.doclava.ClassInfo;
-import com.google.doclava.ConstructorInfo;
 import com.google.doclava.Converter;
 import com.google.doclava.Errors;
 import com.google.doclava.FieldInfo;
@@ -108,6 +107,7 @@ class XmlApiFile extends DefaultHandler {
           isException, isError, isEnum, isAnnotation, isFinal, isIncluded, name, qualifiedName,
           qualifiedTypeName, isPrimitive);
       
+      mCurrentClass.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
       mCurrentClass.setContainingPackage(mCurrentPackage);
       String superclass = attributes.getValue("extends");
       if (superclass == null && !isInterface && !"java.lang.Object".equals(qualifiedName)) {
@@ -157,12 +157,20 @@ class XmlApiFile extends DefaultHandler {
       
       mCurrentMethod.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
     } else if (qName.equals("constructor")) {
+      final boolean pub = "public".equals(attributes.getValue("visibility"));
+      final boolean prot = "protected".equals(attributes.getValue("visibility"));
+      final boolean pkgpriv = "".equals(attributes.getValue("visibility"));
       mCurrentMethod =
-          new ConstructorInfo(attributes.getValue("name"), attributes.getValue("type"), Boolean
-              .valueOf(attributes.getValue("static")), Boolean.valueOf(attributes
-              .getValue("final")), attributes.getValue("deprecated"), attributes
-              .getValue("visibility"), SourcePositionInfo.fromXml(attributes.getValue("source")),
-              mCurrentClass);
+         new MethodInfo(""/*rawCommentText*/, new TypeInfo[0]/*typeParameters*/,
+              attributes.getValue("name"), null/*signature*/, mCurrentClass, mCurrentClass,
+              pub, prot, pkgpriv, false/*isPrivate*/, false/*isFinal*/, false/*isStatic*/,
+              false/*isSynthetic*/, false/*isAbstract*/, false/*isSynthetic*/, false/*isNative*/,
+              false /*isAnnotationElement*/, "constructor", null/*flatSignature*/,
+              null/*overriddenMethod*/, mCurrentClass.asTypeInfo(), new ParameterInfo[0],
+              new ClassInfo[0]/*thrownExceptions*/,
+              SourcePositionInfo.fromXml(attributes.getValue("source")),
+              new AnnotationInstanceInfo[0]/*annotations*/);
+      mCurrentMethod.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
     } else if (qName.equals("field")) {
       String visibility = attributes.getValue("visibility");
       boolean isPublic = visibility.equals("public");
@@ -172,13 +180,20 @@ class XmlApiFile extends DefaultHandler {
       String typeName = attributes.getValue("type");
       TypeInfo type = Converter.obtainTypeFromString(typeName);
       
+      Object value;
+      try {
+          value = ApiFile.parseValue(typeName, attributes.getValue("value"));
+      } catch (ApiParseException ex) {
+          throw new RuntimeException(ex);
+      }
+
       FieldInfo fInfo =
           new FieldInfo(attributes.getValue("name"), mCurrentClass, mCurrentClass, isPublic,
           isProtected, isPackagePrivate, isPrivate, Boolean.valueOf(attributes.getValue("final")),
           Boolean.valueOf(attributes.getValue("static")), Boolean.valueOf(attributes.
           getValue("transient")), Boolean.valueOf(attributes.getValue("volatile")), false,
-          type, "", attributes.getValue("value"), SourcePositionInfo
-          .fromXml(attributes.getValue("source")), new AnnotationInstanceInfo[] {});
+          type, "", value, SourcePositionInfo.fromXml(attributes.getValue("source")),
+          new AnnotationInstanceInfo[] {});
       
       fInfo.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
       mCurrentClass.addField(fInfo);
@@ -204,7 +219,7 @@ class XmlApiFile extends DefaultHandler {
     if (qName.equals("method")) {
       mCurrentClass.addMethod((MethodInfo) mCurrentMethod);
     } else if (qName.equals("constructor")) {
-      mCurrentClass.addConstructor((ConstructorInfo) mCurrentMethod);
+      mCurrentClass.addConstructor((MethodInfo) mCurrentMethod);
     } else if (qName.equals("class") || qName.equals("interface")) {
       mCurrentPackage.addClass(mCurrentClass);
       mCurrentClass = mClassScope.pop();
