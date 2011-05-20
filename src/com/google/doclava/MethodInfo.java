@@ -24,7 +24,7 @@ import java.util.*;
 public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   public static final Comparator<MethodInfo> comparator = new Comparator<MethodInfo>() {
     public int compare(MethodInfo a, MethodInfo b) {
-      return a.name().compareTo(b.name());
+        return a.name().compareTo(b.name());
     }
   };
 
@@ -43,7 +43,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     }
   }
 
-  private static void addInterfaces(ClassInfo[] ifaces, ArrayList<ClassInfo> queue) {
+  private static void addInterfaces(ArrayList<ClassInfo> ifaces, ArrayList<ClassInfo> queue) {
     for (ClassInfo i : ifaces) {
       queue.add(i);
     }
@@ -76,7 +76,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     return null;
   }
 
-  private static void addRealInterfaces(ClassInfo[] ifaces, ArrayList<ClassInfo> queue) {
+  private static void addRealInterfaces(ArrayList<ClassInfo> ifaces, ArrayList<ClassInfo> queue) {
     for (ClassInfo i : ifaces) {
       queue.add(i);
       if (i.realSuperclass() != null && i.realSuperclass().isAbstract()) {
@@ -232,7 +232,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     mIsDeprecated = deprecated;
   }
 
-  public TypeInfo[] getTypeParameters() {
+  public ArrayList<TypeInfo> getTypeParameters() {
     return mTypeParameters;
   }
 
@@ -248,14 +248,14 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     return result;
   }
 
-  public MethodInfo(String rawCommentText, TypeInfo[] typeParameters, String name,
+  public MethodInfo(String rawCommentText, ArrayList<TypeInfo> typeParameters, String name,
       String signature, ClassInfo containingClass, ClassInfo realContainingClass, boolean isPublic,
       boolean isProtected, boolean isPackagePrivate, boolean isPrivate, boolean isFinal,
       boolean isStatic, boolean isSynthetic, boolean isAbstract, boolean isSynchronized,
       boolean isNative, boolean isAnnotationElement, String kind, String flatSignature,
-      MethodInfo overriddenMethod, TypeInfo returnType, ParameterInfo[] parameters,
-      ClassInfo[] thrownExceptions, SourcePositionInfo position,
-      AnnotationInstanceInfo[] annotations) {
+      MethodInfo overriddenMethod, TypeInfo returnType, ArrayList<ParameterInfo> parameters,
+      ArrayList<ClassInfo> thrownExceptions, SourcePositionInfo position,
+      ArrayList<AnnotationInstanceInfo> annotations) {
     // Explicitly coerce 'final' state of Java6-compiled enum values() method, to match
     // the Java5-emitted base API description.
     super(rawCommentText, name, signature, containingClass, realContainingClass, isPublic,
@@ -345,16 +345,23 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   public String getHashableName() {
     StringBuilder result = new StringBuilder();
     result.append(name());
-    for (int p = 0; p < mParameters.length; p++) {
+
+    if (mParameters == null) {
+        return result.toString();
+    }
+
+    int i = 0;
+    for (ParameterInfo param : mParameters) {
       result.append(":");
-      if (p == mParameters.length - 1 && isVarArgs()) {
+      if (i == (mParameters.size()-1) && isVarArgs()) {
         // TODO: note that this does not attempt to handle hypothetical
         // vararg methods whose last parameter is a list of arrays, e.g.
         // "Object[]...".
-        result.append(mParameters[p].type().fullNameNoDimension(typeVariables())).append("...");
+        result.append(param.type().fullNameNoDimension(typeVariables())).append("...");
       } else {
-        result.append(mParameters[p].type().fullName(typeVariables()));
+        result.append(param.type().fullName(typeVariables()));
       }
+      i++;
     }
     return result.toString();
   }
@@ -381,10 +388,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
         rv.add(documented[i]);
       }
 
-      ClassInfo[] all = mThrownExceptions;
-      len = all.length;
-      for (int i = 0; i < len; i++) {
-        ClassInfo cl = all[i];
+      for (ClassInfo cl : mThrownExceptions) {
         if (documented == null || !inList(cl, documented)) {
           rv.add(new ThrowsTagInfo("@throws", "@throws", cl.qualifiedName(), cl, "",
               containingClass(), position()));
@@ -407,7 +411,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
 
   public ParamTagInfo[] paramTags() {
     if (mParamTags == null) {
-      final int N = mParameters.length;
+      final int N = mParameters.size();
 
       String[] names = new String[N];
       String[] comments = new String[N];
@@ -415,10 +419,12 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
 
       // get the right names so we can handle our names being different from
       // our parent's names.
-      for (int i = 0; i < N; i++) {
-        names[i] = mParameters[i].name();
+      int i = 0;
+      for (ParameterInfo param : mParameters) {
+        names[i] = param.name();
         comments[i] = "";
-        positions[i] = mParameters[i].position();
+        positions[i] = param.position();
+        i++;
       }
 
       // gather our comments, and complain about misnamed @param tags
@@ -438,7 +444,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
       MethodInfo overridden = this.findOverriddenMethod(name(), signature());
       if (overridden != null) {
         ParamTagInfo[] maternal = overridden.paramTags();
-        for (int i = 0; i < N; i++) {
+        for (i = 0; i < N; i++) {
           if (comments[i].equals("")) {
             comments[i] = maternal[i].parameterComment();
             positions[i] = maternal[i].position();
@@ -448,7 +454,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
 
       // construct the results, and cache them for next time
       mParamTags = new ParamTagInfo[N];
-      for (int i = 0; i < N; i++) {
+      for (i = 0; i < N; i++) {
         mParamTags[i] =
             new ParamTagInfo("@param", "@param", names[i] + " " + comments[i], parent(),
                 positions[i]);
@@ -487,23 +493,22 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     return result;
   }
 
-  public ParameterInfo[] parameters() {
+  public ArrayList<ParameterInfo> parameters() {
     return mParameters;
   }
 
 
   public boolean matchesParams(String[] params, String[] dimensions, boolean varargs) {
     if (mParamStrings == null) {
-      ParameterInfo[] mine = mParameters;
-      int len = mine.length;
-      if (len != params.length) {
+      if (mParameters.size() != params.length) {
         return false;
       }
-      for (int i = 0; i < len; i++) {
-        if (!mine[i].matchesDimension(dimensions[i], varargs)) {
+      int i = 0;
+      for (ParameterInfo mine : mParameters) {
+        if (!mine.matchesDimension(dimensions[i], varargs)) {
           return false;
         }
-        TypeInfo myType = mine[i].type();
+        TypeInfo myType = mine.type();
         String qualifiedName = myType.qualifiedTypeName();
         String realType = myType.isPrimitive() ? "" : myType.asClassInfo().qualifiedName();
         String s = params[i];
@@ -514,6 +519,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
         if (!matchesType(qualifiedName, s) && !matchesType(realType, s)) {
           return false;
         }
+        i++;
       }
     }
     return true;
@@ -554,7 +560,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     ParamTagInfo.makeHDF(data, base + ".paramTags", paramTags());
     AttrTagInfo.makeReferenceHDF(data, base + ".attrRefs", comment().attrTags());
     ThrowsTagInfo.makeHDF(data, base + ".throws", throwsTags());
-    ParameterInfo.makeHDF(data, base + ".params", parameters(), isVarArgs(), typeVariables());
+    ParameterInfo.makeHDF(data, base + ".params", mParameters.toArray(new ParameterInfo[mParameters.size()]), isVarArgs(), typeVariables());
     if (isProtected()) {
       data.setValue(base + ".scope", "protected");
     } else if (isPublic()) {
@@ -573,7 +579,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     HashSet<String> result = TypeInfo.typeVariables(mTypeParameters);
     ClassInfo cl = containingClass();
     while (cl != null) {
-      TypeInfo[] types = cl.asTypeInfo().typeArguments();
+        ArrayList<TypeInfo> types = cl.asTypeInfo().typeArguments();
       if (types != null) {
         TypeInfo.typeVariables(types, result);
       }
@@ -587,12 +593,12 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     return true;
   }
 
-  public ClassInfo[] thrownExceptions() {
+  public ArrayList<ClassInfo> thrownExceptions() {
     return mThrownExceptions;
   }
 
   public String typeArgumentsName(HashSet<String> typeVars) {
-    if (mTypeParameters == null || mTypeParameters.length == 0) {
+    if (mTypeParameters == null || mTypeParameters.isEmpty()) {
       return "";
     } else {
       return TypeInfo.typeArgumentsName(mTypeParameters, typeVars);
@@ -630,43 +636,17 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   
   public void addException(String exec) {
     ClassInfo exceptionClass = new ClassInfo(exec);
-    List<ClassInfo> exceptions = new ArrayList<ClassInfo>(mThrownExceptions.length + 1);
-    exceptions.addAll(Arrays.asList(mThrownExceptions));
-    exceptions.add(exceptionClass);
-    mThrownExceptions = new ClassInfo[exceptions.size()];
-    exceptions.toArray(mThrownExceptions);
+
+    mThrownExceptions.add(exceptionClass);
   }
   
   public void addParameter(ParameterInfo p) {
     // Name information
-    ParameterInfo[] newParams;
-    int i = 0;
-    
     if (mParameters == null) {
-      newParams = new ParameterInfo[1];
-    } else {
-      newParams = new ParameterInfo[mParameters.length+1];
-      for (ParameterInfo info : mParameters) {
-        newParams[i++] = info;
-      }
+        mParameters = new ArrayList<ParameterInfo>();
     }
-    newParams[i] = p;
-    mParameters = newParams;
-    
-    // Type information
-    TypeInfo[] newTypes;
-    i = 0;
-    
-    if (mTypeParameters == null) {
-      newTypes = new TypeInfo[1];
-    } else {
-      newTypes = new TypeInfo[mTypeParameters.length+1];
-      for (TypeInfo info : mTypeParameters) {
-        newTypes[i++] = info;
-      }
-    }
-    newTypes[i] = p.mType;
-    mTypeParameters = newTypes;
+
+    mParameters.add(p);
   }
 
   private String mFlatSignature;
@@ -679,12 +659,12 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   private boolean mIsVarargs;
   private boolean mDeprecatedKnown;
   private boolean mIsDeprecated;
-  private ParameterInfo[] mParameters;
-  private ClassInfo[] mThrownExceptions;
+  private ArrayList<ParameterInfo> mParameters;
+  private ArrayList<ClassInfo> mThrownExceptions;
   private String[] mParamStrings;
-  ThrowsTagInfo[] mThrowsTags;
+  private ThrowsTagInfo[] mThrowsTags;
   private ParamTagInfo[] mParamTags;
-  private TypeInfo[] mTypeParameters;
+  private ArrayList<TypeInfo> mTypeParameters;
   private AnnotationValueInfo mDefaultAnnotationElementValue;
   private String mReasonOpened;
   
@@ -791,7 +771,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     for (ClassInfo exception : thrownExceptions()) {
       if (!mInfo.throwsException(exception)) {
         // exclude 'throws' changes to finalize() overrides with no arguments
-        if (!name().equals("finalize") || (mParameters.length > 0)) {
+        if (!name().equals("finalize") || (!mParameters.isEmpty())) {
           Errors.error(Errors.CHANGED_THROWS, mInfo.position(), "Method " + mInfo.qualifiedName()
               + " no longer throws exception " + exception.qualifiedName());
           consistent = false;
@@ -802,7 +782,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     for (ClassInfo exec : mInfo.thrownExceptions()) {
       // exclude 'throws' changes to finalize() overrides with no arguments
       if (!throwsException(exec)) {
-        if (!name().equals("finalize") || (mParameters.length > 0)) {
+        if (!name().equals("finalize") || (!mParameters.isEmpty())) {
           Errors.error(Errors.CHANGED_THROWS, mInfo.position(), "Method " + mInfo.qualifiedName()
               + " added thrown exception " + exec.qualifiedName());
           consistent = false;
@@ -811,5 +791,11 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
     }
 
     return consistent;
+  }
+
+  public void printResolutions() {
+      System.out.println("Resolutions for Method " + mName + mFlatSignature + ":");
+
+      super.printResolutions();
   }
 }

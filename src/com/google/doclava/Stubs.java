@@ -16,18 +16,19 @@
 
 package com.google.doclava;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Stubs {
   public static void writeStubsAndApi(String stubsDir, String apiFile,
@@ -58,8 +59,7 @@ public class Stubs {
     // be written, e.g. hidden things
     for (ClassInfo cl : notStrippable) {
       if (!cl.isHidden()) {
-        MethodInfo[] methods = cl.selfMethods();
-        for (MethodInfo m : methods) {
+        for (MethodInfo m : cl.selfMethods()) {
           if (m.isHidden()) {
             Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Reference to hidden method "
                 + m.name());
@@ -76,8 +76,7 @@ public class Stubs {
                 + "." + m.name() + " returns unavailable type " + returnClass.name());
           }
 
-          ParameterInfo[] params = m.parameters();
-          for (ParameterInfo p : params) {
+          for (ParameterInfo p :  m.parameters()) {
             TypeInfo t = p.type();
             if (!t.isPrimitive()) {
               if (t.asClassInfo().isHidden()) {
@@ -89,8 +88,7 @@ public class Stubs {
         }
 
         // annotations are handled like methods
-        methods = cl.annotationElements();
-        for (MethodInfo m : methods) {
+        for (MethodInfo m : cl.annotationElements()) {
           if (m.isHidden()) {
             Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Reference to hidden annotation "
                 + m.name());
@@ -102,8 +100,7 @@ public class Stubs {
                 + "' returns unavailable type " + returnClass.name());
           }
 
-          ParameterInfo[] params = m.parameters();
-          for (ParameterInfo p : params) {
+          for (ParameterInfo p :  m.parameters()) {
             TypeInfo t = p.type();
             if (!t.isPrimitive()) {
               if (t.asClassInfo().isHidden()) {
@@ -220,7 +217,7 @@ public class Stubs {
     }
   }
 
-  private static void cantStripThis(MethodInfo[] mInfos, HashSet<ClassInfo> notStrippable) {
+  private static void cantStripThis(ArrayList<MethodInfo> mInfos, HashSet<ClassInfo> notStrippable) {
     // for each method, blow open the parameters, throws and return types. also blow open their
     // generics
     if (mInfos != null) {
@@ -362,9 +359,8 @@ public class Stubs {
       }
     }
 
-    TypeInfo[] interfaces = cl.realInterfaceTypes();
     List<TypeInfo> usedInterfaces = new ArrayList<TypeInfo>();
-    for (TypeInfo iface : interfaces) {
+    for (TypeInfo iface : cl.realInterfaceTypes()) {
       if (notStrippable.contains(iface.asClassInfo()) && !iface.asClassInfo().isDocOnly()) {
         usedInterfaces.add(iface);
       }
@@ -386,16 +382,17 @@ public class Stubs {
 
     stream.println("{");
 
-    FieldInfo[] enumConstants = cl.enumConstants();
-    int N = enumConstants.length;
-    for (int i = 0; i < N; i++) {
-      FieldInfo field = enumConstants[i];
+    ArrayList<FieldInfo> enumConstants = cl.enumConstants();
+    int N = enumConstants.size();
+    int i = 0;
+    for (FieldInfo field : enumConstants) {
       if (!field.constantLiteralValue().equals("null")) {
         stream.println(field.name() + "(" + field.constantLiteralValue()
             + (i == N - 1 ? ");" : "),"));
       } else {
         stream.println(field.name() + "(" + (i == N - 1 ? ");" : "),"));
       }
+      i++;
     }
 
     for (ClassInfo inner : cl.getRealInnerClasses()) {
@@ -431,7 +428,7 @@ public class Stubs {
     // and the super class doesn't have a default constructor, write in a private constructor
     // that works. TODO -- we generate this as protected, but we really should generate
     // it as private unless it also exists in the real code.
-    if ((cl.constructors().length == 0 && (cl.getNonWrittenConstructors().length != 0 || fieldNeedsInitialization))
+    if ((cl.constructors().isEmpty() && (!cl.getNonWrittenConstructors().isEmpty() || fieldNeedsInitialization))
         && !cl.isAnnotation() && !cl.isInterface() && !cl.isEnum()) {
       // Errors.error(Errors.HIDDEN_CONSTRUCTOR,
       // cl.position(), "No constructors " +
@@ -534,7 +531,7 @@ public class Stubs {
     stream.print(n + "(");
     comma = "";
     int count = 1;
-    int size = method.parameters().length;
+    int size = method.parameters().size();
     for (ParameterInfo param : method.parameters()) {
       stream.print(comma + fullParameterTypeName(method, param.type(), count == size) + " "
           + param.name());
@@ -544,7 +541,7 @@ public class Stubs {
     stream.print(")");
 
     comma = "";
-    if (method.thrownExceptions().length > 0) {
+    if (method.thrownExceptions().size() > 0) {
       stream.print(" throws ");
       for (ClassInfo thrown : method.thrownExceptions()) {
         stream.print(comma + thrown.qualifiedName());
@@ -641,7 +638,7 @@ public class Stubs {
   }
 
   // call a constructor, any constructor on this class's superclass.
-  static String superCtorCall(ClassInfo cl, ClassInfo[] thrownExceptions) {
+  static String superCtorCall(ClassInfo cl, ArrayList<ClassInfo> thrownExceptions) {
     ClassInfo base = cl.realSuperclass();
     if (base == null) {
       return "";
@@ -652,7 +649,7 @@ public class Stubs {
         exceptionNames.add(thrown.name());
       }
     }
-    MethodInfo[] ctors = base.constructors();
+    ArrayList<MethodInfo> ctors = base.constructors();
     MethodInfo ctor = null;
     // bad exception indicates that the exceptions thrown by the super constructor
     // are incompatible with the constructor we're using for the sub class.
@@ -671,7 +668,7 @@ public class Stubs {
           continue;
         }
         // if it has no args, we're done
-        if (m.parameters().length == 0) {
+        if (m.parameters().isEmpty()) {
           return "";
         }
         ctor = m;
@@ -680,10 +677,9 @@ public class Stubs {
     if (ctor != null) {
       String result = "";
       result += "super(";
-      ParameterInfo[] params = ctor.parameters();
-      int N = params.length;
-      for (int i = 0; i < N; i++) {
-        TypeInfo t = params[i].type();
+      ArrayList<ParameterInfo> params = ctor.parameters();
+      for (ParameterInfo param : params) {
+        TypeInfo t = param.type();
         if (t.isPrimitive() && t.dimension().equals("")) {
           String n = t.simpleTypeName();
           if (("byte".equals(n) || "short".equals(n) || "int".equals(n) || "long".equals(n)
@@ -705,7 +701,7 @@ public class Stubs {
               (!t.isTypeVariable() ? "(" + t.qualifiedTypeName() + t.dimension() + ")" : "")
                   + "null";
         }
-        if (i != N - 1) {
+        if (param != params.get(params.size()-1)) {
           result += ",";
         }
       }
@@ -716,7 +712,7 @@ public class Stubs {
     }
   }
 
-  static void writeAnnotations(PrintStream stream, AnnotationInstanceInfo[] annotations) {
+  static void writeAnnotations(PrintStream stream, ArrayList<AnnotationInstanceInfo> annotations) {
     for (AnnotationInstanceInfo ann : annotations) {
       if (!ann.type().isHidden()) {
         stream.println(ann.toString());
@@ -809,8 +805,8 @@ public class Stubs {
         // + " source=\"" + cl.position() + "\"\n"
         + ">");
 
-    ClassInfo[] interfaces = cl.realInterfaces();
-    Arrays.sort(interfaces, ClassInfo.comparator);
+    ArrayList<ClassInfo> interfaces = cl.realInterfaces();
+    Collections.sort(interfaces, ClassInfo.comparator);
     for (ClassInfo iface : interfaces) {
       if (notStrippable.contains(iface)) {
         xmlWriter.println("<implements name=\"" + iface.qualifiedName() + "\">");
@@ -818,22 +814,22 @@ public class Stubs {
       }
     }
 
-    MethodInfo[] constructors = cl.constructors();
-    Arrays.sort(constructors, MethodInfo.comparator);
+    ArrayList<MethodInfo> constructors = cl.constructors();
+    Collections.sort(constructors, MethodInfo.comparator);
     for (MethodInfo mi : constructors) {
       writeConstructorXML(xmlWriter, mi);
     }
 
-    MethodInfo[] methods = cl.allSelfMethods();
-    Arrays.sort(methods, MethodInfo.comparator);
+    ArrayList<MethodInfo> methods = cl.allSelfMethods();
+    Collections.sort(methods, MethodInfo.comparator);
     for (MethodInfo mi : methods) {
       if (!methodIsOverride(notStrippable, mi)) {
         writeMethodXML(xmlWriter, mi);
       }
     }
 
-    FieldInfo[] fields = cl.allSelfFields();
-    Arrays.sort(fields, FieldInfo.comparator);
+    ArrayList<FieldInfo> fields = cl.allSelfFields();
+    Collections.sort(fields, FieldInfo.comparator);
     for (FieldInfo fi : fields) {
       writeFieldXML(xmlWriter, fi);
     }
@@ -863,7 +859,7 @@ public class Stubs {
         + ">");
 
     // write parameters in declaration order
-    int numParameters = mi.parameters().length;
+    int numParameters = mi.parameters().size();
     int count = 0;
     for (ParameterInfo pi : mi.parameters()) {
       count++;
@@ -871,8 +867,8 @@ public class Stubs {
     }
 
     // but write exceptions in canonicalized order
-    ClassInfo[] exceptions = mi.thrownExceptions();
-    Arrays.sort(exceptions, ClassInfo.comparator);
+    ArrayList<ClassInfo> exceptions = mi.thrownExceptions();
+    Collections.sort(exceptions, ClassInfo.comparator);
     for (ClassInfo pi : exceptions) {
       xmlWriter.println("<exception name=\"" + pi.name() + "\" type=\"" + pi.qualifiedName()
           + "\">");
@@ -896,15 +892,15 @@ public class Stubs {
         // + " source=\"" + mi.position() + "\"\n"
         + ">");
 
-    int numParameters = mi.parameters().length;
+    int numParameters = mi.parameters().size();
     int count = 0;
     for (ParameterInfo pi : mi.parameters()) {
       count++;
       writeParameterXML(xmlWriter, mi, pi, count == numParameters);
     }
 
-    ClassInfo[] exceptions = mi.thrownExceptions();
-    Arrays.sort(exceptions, ClassInfo.comparator);
+    ArrayList<ClassInfo> exceptions = mi.thrownExceptions();
+    Collections.sort(exceptions, ClassInfo.comparator);
     for (ClassInfo pi : exceptions) {
       xmlWriter.println("<exception name=\"" + pi.name() + "\" type=\"" + pi.qualifiedName()
           + "\">");
@@ -1031,8 +1027,8 @@ public class Stubs {
       apiWriter.print(cl.realSuperclass().qualifiedName());
     }
 
-    ClassInfo[] interfaces = cl.realInterfaces();
-    Arrays.sort(interfaces, ClassInfo.comparator);
+    ArrayList<ClassInfo> interfaces = cl.realInterfaces();
+    Collections.sort(interfaces, ClassInfo.comparator);
     first = true;
     for (ClassInfo iface : interfaces) {
       if (notStrippable.contains(iface)) {
@@ -1047,28 +1043,28 @@ public class Stubs {
 
     apiWriter.print(" {\n");
 
-    MethodInfo[] constructors = cl.constructors();
-    Arrays.sort(constructors, MethodInfo.comparator);
+    ArrayList<MethodInfo> constructors = cl.constructors();
+    Collections.sort(constructors, MethodInfo.comparator);
     for (MethodInfo mi : constructors) {
       writeConstructorApi(apiWriter, mi);
     }
 
-    MethodInfo[] methods = cl.allSelfMethods();
-    Arrays.sort(methods, MethodInfo.comparator);
+    ArrayList<MethodInfo> methods = cl.allSelfMethods();
+    Collections.sort(methods, MethodInfo.comparator);
     for (MethodInfo mi : methods) {
       if (!methodIsOverride(notStrippable, mi)) {
         writeMethodApi(apiWriter, mi);
       }
     }
 
-    FieldInfo[] enums = cl.enumConstants();
-    Arrays.sort(enums, FieldInfo.comparator);
+    ArrayList<FieldInfo> enums = cl.enumConstants();
+    Collections.sort(enums, FieldInfo.comparator);
     for (FieldInfo fi : enums) {
       writeFieldApi(apiWriter, fi, "enum_constant");
     }
 
-    FieldInfo[] fields = cl.allSelfFields();
-    Arrays.sort(fields, FieldInfo.comparator);
+    ArrayList<FieldInfo> fields = cl.allSelfFields();
+    Collections.sort(fields, FieldInfo.comparator);
     for (FieldInfo fi : fields) {
       writeFieldApi(apiWriter, fi, "field");
     }
@@ -1123,16 +1119,14 @@ public class Stubs {
     apiWriter.print(";\n");
   }
 
-  static void writeParametersApi(PrintStream apiWriter, MethodInfo method, ParameterInfo[] params) {
+  static void writeParametersApi(PrintStream apiWriter, MethodInfo method, ArrayList<ParameterInfo> params) {
     apiWriter.print("(");
 
-    final int N = params.length;
-    for (int i=0; i<N; i++) {
-      if (i != 0) {
+    for (ParameterInfo pi : params) {
+      if (pi != params.get(0)) {
         apiWriter.print(", ");
       }
-      final ParameterInfo pi = params[i];
-      apiWriter.print(fullParameterTypeName(method, pi.type(), i == N-1));
+      apiWriter.print(fullParameterTypeName(method, pi.type(), pi == params.get(params.size()-1)));
       // turn on to write the names too
       if (false) {
         apiWriter.print(" ");
@@ -1143,14 +1137,13 @@ public class Stubs {
     apiWriter.print(")");
   }
 
-  static void writeThrowsApi(PrintStream apiWriter, ClassInfo[] exceptions) {
+  static void writeThrowsApi(PrintStream apiWriter, ArrayList<ClassInfo> exceptions) {
     // write in a canonical order
-    exceptions = exceptions.clone();
-    Arrays.sort(exceptions, ClassInfo.comparator);
-    final int N = exceptions.length;
+    exceptions = (ArrayList<ClassInfo>) exceptions.clone();
+    Collections.sort(exceptions, ClassInfo.comparator);
+    //final int N = exceptions.length;
     boolean first = true;
-    for (int i=0; i<N; i++) {
-      final ClassInfo ex = exceptions[i];
+    for (ClassInfo ex : exceptions) {
       // Turn this off, b/c we need to regenrate the old xml files.
       if (true || !"java.lang.RuntimeException".equals(ex.qualifiedName())
           && !ex.isDerivedFrom("java.lang.RuntimeException")) {

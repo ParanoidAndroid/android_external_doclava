@@ -1211,17 +1211,16 @@ public class Doclava {
     for (ClassInfo clazz : classes) {
 
       // first check constant fields for the SdkConstant annotation.
-      FieldInfo[] fields = clazz.allSelfFields();
+      ArrayList<FieldInfo> fields = clazz.allSelfFields();
       for (FieldInfo field : fields) {
         Object cValue = field.constantValue();
         if (cValue != null) {
-          AnnotationInstanceInfo[] annotations = field.annotations();
-          if (annotations.length > 0) {
+            ArrayList<AnnotationInstanceInfo> annotations = field.annotations();
+          if (!annotations.isEmpty()) {
             for (AnnotationInstanceInfo annotation : annotations) {
               if (SDK_CONSTANT_ANNOTATION.equals(annotation.type().qualifiedName())) {
-                AnnotationValueInfo[] values = annotation.elementValues();
-                if (values.length > 0) {
-                  String type = values[0].valueString();
+                if (!annotation.elementValues().isEmpty()) {
+                  String type = annotation.elementValues().get(0).valueString();
                   if (SDK_CONSTANT_TYPE_ACTIVITY_ACTION.equals(type)) {
                     activityActions.add(cValue.toString());
                   } else if (SDK_CONSTANT_TYPE_BROADCAST_ACTION.equals(type)) {
@@ -1245,8 +1244,8 @@ public class Doclava {
       // (unless the class is hidden or abstract, or non public)
       if (clazz.isHidden() == false && clazz.isPublic() && clazz.isAbstract() == false) {
         boolean annotated = false;
-        AnnotationInstanceInfo[] annotations = clazz.annotations();
-        if (annotations.length > 0) {
+        ArrayList<AnnotationInstanceInfo> annotations = clazz.annotations();
+        if (!annotations.isEmpty()) {
           for (AnnotationInstanceInfo annotation : annotations) {
             if (SDK_WIDGET_ANNOTATION.equals(annotation.type().qualifiedName())) {
               widgets.add(clazz);

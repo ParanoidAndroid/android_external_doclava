@@ -22,7 +22,8 @@ LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
 LOCAL_JAVA_LIBRARIES := \
 	jsilver \
-	guavalib
+	guavalib \
+	antlr
 	
 LOCAL_CLASSPATH := \
 	$(HOST_JDK_TOOLS_JAR)

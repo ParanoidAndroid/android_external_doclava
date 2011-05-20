@@ -20,7 +20,7 @@ import com.google.clearsilver.jsilver.data.Data;
 
 import java.util.*;
 
-public class TypeInfo {
+public class TypeInfo implements Resolvable {
   public static final Set<String> PRIMITIVE_TYPES = Collections.unmodifiableSet(
       new HashSet<String>(Arrays.asList("boolean", "byte", "char", "double", "float", "int",
       "long", "short", "void")));
@@ -65,8 +65,7 @@ public class TypeInfo {
       TypeInfo info = new TypeInfo(typeString.substring(entryStartPos, paramEndPos).trim());
       generics.add(info);
       
-      mTypeArguments = new TypeInfo[generics.size()];
-      generics.toArray(mTypeArguments);
+      mTypeArguments = generics;
       
       if (paramEndPos < typeString.length() - 1) {
         typeString = typeString.substring(0,paramStartPos) + typeString.substring(paramEndPos + 1);
@@ -127,13 +126,16 @@ public class TypeInfo {
     }
   }
 
-  public static String typeArgumentsName(TypeInfo[] args, HashSet<String> typeVars) {
+  public static String typeArgumentsName(ArrayList<TypeInfo> args, HashSet<String> typeVars) {
     String result = "<";
-    for (int i = 0; i < args.length; i++) {
-      result += args[i].fullName(typeVars);
-      if (i != args.length - 1) {
+
+    int i = 0;
+    for (TypeInfo arg : args) {
+      result += arg.fullName(typeVars);
+      if (i != (args.size()-1)) {
         result += ", ";
       }
+      i++;
     }
     result += ">";
     return result;
@@ -158,23 +160,29 @@ public class TypeInfo {
      * if (fullName != null) { return fullName; }
      */
     fullName = mQualifiedTypeName;
-    if (mTypeArguments != null && mTypeArguments.length > 0) {
+    if (mTypeArguments != null && !mTypeArguments.isEmpty()) {
       fullName += typeArgumentsName(mTypeArguments, typeVars);
-    } else if (mSuperBounds != null && mSuperBounds.length > 0) {
-      fullName += " super " + mSuperBounds[0].fullName(typeVars);
-      for (int i = 1; i < mSuperBounds.length; i++) {
-        fullName += " & " + mSuperBounds[i].fullName(typeVars);
-      }
-    } else if (mExtendsBounds != null && mExtendsBounds.length > 0) {
-      fullName += " extends " + mExtendsBounds[0].fullName(typeVars);
-      for (int i = 1; i < mExtendsBounds.length; i++) {
-        fullName += " & " + mExtendsBounds[i].fullName(typeVars);
-      }
+    } else if (mSuperBounds != null && !mSuperBounds.isEmpty()) {
+        for (TypeInfo superBound : mSuperBounds) {
+            if (superBound == mSuperBounds.get(0)) {
+                fullName += " super " + superBound.fullName(typeVars);
+            } else {
+                fullName += " & " + superBound.fullName(typeVars);
+            }
+        }
+    } else if (mExtendsBounds != null && !mExtendsBounds.isEmpty()) {
+        for (TypeInfo extendsBound : mExtendsBounds) {
+            if (extendsBound == mExtendsBounds.get(0)) {
+                fullName += " extends " + extendsBound.fullName(typeVars);
+            } else {
+                fullName += " & " + extendsBound.fullName(typeVars);
+            }
+        }
     }
     return fullName;
   }
 
-  public TypeInfo[] typeArguments() {
+  public ArrayList<TypeInfo> typeArguments() {
     return mTypeArguments;
   }
 
@@ -235,25 +243,41 @@ public class TypeInfo {
     }
   }
 
-  public static void makeHDF(Data data, String base, TypeInfo[] types, boolean qualified,
+  public static void makeHDF(Data data, String base, ArrayList<TypeInfo> types, boolean qualified,
       HashSet<String> typeVariables) {
-    final int N = types.length;
-    for (int i = 0; i < N; i++) {
-      types[i].makeHDFRecursive(data, base + "." + i, qualified, false, typeVariables);
+    int i = 0;
+    for (TypeInfo type : types) {
+      type.makeHDFRecursive(data, base + "." + i++, qualified, false, typeVariables);
     }
   }
 
-  public static void makeHDF(Data data, String base, TypeInfo[] types, boolean qualified) {
+  public static void makeHDF(Data data, String base, ArrayList<TypeInfo> types, boolean qualified) {
     makeHDF(data, base, types, qualified, new HashSet<String>());
   }
 
-  void setTypeArguments(TypeInfo[] args) {
+  void setTypeArguments(ArrayList<TypeInfo> args) {
     mTypeArguments = args;
   }
 
-  void setBounds(TypeInfo[] superBounds, TypeInfo[] extendsBounds) {
+  public void addTypeArgument(TypeInfo arg) {
+      if (mTypeArguments == null) {
+          mTypeArguments = new ArrayList<TypeInfo>();
+      }
+
+      mTypeArguments.add(arg);
+  }
+
+  void setBounds(ArrayList<TypeInfo> superBounds, ArrayList<TypeInfo> extendsBounds) {
     mSuperBounds = superBounds;
     mExtendsBounds = extendsBounds;
+  }
+
+  public ArrayList<TypeInfo> superBounds() {
+      return mSuperBounds;
+  }
+
+  public ArrayList<TypeInfo> extendsBounds() {
+      return mExtendsBounds;
   }
 
   void setIsTypeVariable(boolean b) {
@@ -264,15 +288,17 @@ public class TypeInfo {
     mIsWildcard = b;
   }
 
-  static HashSet<String> typeVariables(TypeInfo[] params) {
+  static HashSet<String> typeVariables(ArrayList<TypeInfo> params) {
     return typeVariables(params, new HashSet<String>());
   }
 
-  static HashSet<String> typeVariables(TypeInfo[] params, HashSet<String> result) {
-    for (TypeInfo t : params) {
-      if (t.mIsTypeVariable) {
-        result.add(t.mQualifiedTypeName);
-      }
+  static HashSet<String> typeVariables(ArrayList<TypeInfo> params, HashSet<String> result) {
+    if (params != null) {
+        for (TypeInfo t : params) {
+            if (t.mIsTypeVariable) {
+                result.add(t.mQualifiedTypeName);
+            }
+        }
     }
     return result;
   }
@@ -323,6 +349,23 @@ public class TypeInfo {
     return returnString;
   }
 
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new ArrayList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public void printResolutions() {
+      System.out.println("Resolutions for Type " + mSimpleTypeName + ":");
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
+  }
+
+  private ArrayList<Resolution> mResolutions;
+
   private boolean mIsPrimitive;
   private boolean mIsTypeVariable;
   private boolean mIsWildcard;
@@ -330,8 +373,8 @@ public class TypeInfo {
   private String mSimpleTypeName;
   private String mQualifiedTypeName;
   private ClassInfo mClass;
-  private TypeInfo[] mTypeArguments;
-  private TypeInfo[] mSuperBounds;
-  private TypeInfo[] mExtendsBounds;
+  private ArrayList<TypeInfo> mTypeArguments;
+  private ArrayList<TypeInfo> mSuperBounds;
+  private ArrayList<TypeInfo> mExtendsBounds;
   private String mFullName;
 }

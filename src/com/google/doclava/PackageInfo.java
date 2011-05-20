@@ -39,11 +39,13 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
     }
 
     mPackage = pkg;
+    initializeMaps();
   }
 
   public PackageInfo(String name) {
     super("", null);
     mName = name;
+    initializeMaps();
   }
 
   public PackageInfo(String name, SourcePositionInfo position) {
@@ -54,6 +56,15 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
     } else {
       mName = name;
     }
+    initializeMaps();
+  }
+
+  private void initializeMaps() {
+      mInterfacesMap = new HashMap<String, ClassInfo>();
+      mOrdinaryClassesMap = new HashMap<String, ClassInfo>();
+      mEnumsMap = new HashMap<String, ClassInfo>();
+      mExceptionsMap = new HashMap<String, ClassInfo>();
+      mErrorsMap = new HashMap<String, ClassInfo>();
   }
 
   public String htmlPage() {
@@ -177,6 +188,73 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
   private ClassInfo[] mEnums;
   private ClassInfo[] mExceptions;
   private ClassInfo[] mErrors;
+
+  private HashMap<String, ClassInfo> mInterfacesMap;
+  private HashMap<String, ClassInfo> mOrdinaryClassesMap;
+  private HashMap<String, ClassInfo> mEnumsMap;
+  private HashMap<String, ClassInfo> mExceptionsMap;
+  private HashMap<String, ClassInfo> mErrorsMap;
+
+
+  public ClassInfo getClass(String className) {
+      ClassInfo cls = mInterfacesMap.get(className);
+
+      if (cls != null) {
+          return cls;
+      }
+
+      cls = mOrdinaryClassesMap.get(className);
+
+      if (cls != null) {
+          return cls;
+      }
+
+      cls = mEnumsMap.get(className);
+
+      if (cls != null) {
+          return cls;
+      }
+
+      cls = mEnumsMap.get(className);
+
+      if (cls != null) {
+          return cls;
+      }
+
+      return mErrorsMap.get(className);
+  }
+
+  public void addInterface(ClassInfo cls) {
+      mInterfacesMap.put(cls.name(), cls);
+  }
+
+  public ClassInfo getInterface(String interfaceName) {
+      return mInterfacesMap.get(interfaceName);
+  }
+
+  public ClassInfo getOrdinaryClass(String className) {
+      return mOrdinaryClassesMap.get(className);
+  }
+
+  public void addOrdinaryClass(ClassInfo cls) {
+      mOrdinaryClassesMap.put(cls.name(), cls);
+  }
+
+  public ClassInfo getEnum(String enumName) {
+      return mEnumsMap.get(enumName);
+  }
+
+  public void addEnum(ClassInfo cls) {
+      this.mEnumsMap.put(cls.name(), cls);
+  }
+
+  public ClassInfo getException(String exceptionName) {
+      return mExceptionsMap.get(exceptionName);
+  }
+
+  public ClassInfo getError(String errorName) {
+      return mErrorsMap.get(errorName);
+  }
 
   // TODO: Leftovers from ApiCheck that should be better merged.
   private HashMap<String, ClassInfo> mClasses = new HashMap<String, ClassInfo>();

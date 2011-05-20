@@ -16,14 +16,19 @@
 
 package com.google.doclava;
 
-public class AnnotationValueInfo {
+import java.util.ArrayList;
+
+public class AnnotationValueInfo implements Resolvable {
   private Object mValue;
-  private String mString;
   private MethodInfo mElement;
+  private ArrayList<Resolution> mResolutions;
+
+  public AnnotationValueInfo() {
+  }
 
   public AnnotationValueInfo(MethodInfo element) {
-    mElement = element;
-  }
+      mElement = element;
+    }
 
   public void init(Object value) {
     mValue = value;
@@ -31,6 +36,10 @@ public class AnnotationValueInfo {
 
   public MethodInfo element() {
     return mElement;
+  }
+
+  public void setElement(MethodInfo element) {
+      mElement = element;
   }
 
   public Object value() {
@@ -50,21 +59,38 @@ public class AnnotationValueInfo {
       return str.toString();
     } else if (v instanceof AnnotationInstanceInfo) {
       return v.toString();
-    } else if (v instanceof AnnotationValueInfo[]) {
+    } else if (v instanceof ArrayList<?>) {
       StringBuilder str = new StringBuilder();
-      AnnotationValueInfo[] array = (AnnotationValueInfo[]) v;
-      final int N = array.length;
+
+      @SuppressWarnings("unchecked")
+      ArrayList<AnnotationValueInfo> values = (ArrayList<AnnotationValueInfo>) v;
+
       str.append("{");
-      for (int i = 0; i < array.length; i++) {
-        str.append(array[i].valueString());
-        if (i != N - 1) {
-          str.append(",");
-        }
+      for (AnnotationValueInfo info : values) {
+          str.append(info.valueString());
+          if (info != values.get(values.size()-1)) {
+            str.append(",");
+          }
       }
       str.append("}");
       return str.toString();
     } else {
       return FieldInfo.constantLiteralValue(v);
     }
+  }
+
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new ArrayList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public void printResolutions() {
+      System.out.println("Resolutions for Annotation Value:");
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
   }
 }

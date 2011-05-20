@@ -16,22 +16,20 @@
 
 package com.google.doclava.apicheck;
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.util.Stack;
-
-import com.sun.javadoc.ClassDoc;
-
 import com.google.doclava.AnnotationInstanceInfo;
 import com.google.doclava.ClassInfo;
 import com.google.doclava.Converter;
-import com.google.doclava.Errors;
 import com.google.doclava.FieldInfo;
 import com.google.doclava.MethodInfo;
 import com.google.doclava.PackageInfo;
 import com.google.doclava.ParameterInfo;
 import com.google.doclava.SourcePositionInfo;
 import com.google.doclava.TypeInfo;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 class ApiFile {
 
@@ -180,7 +178,7 @@ class ApiFile {
     api.mapClassToSuper(cl, ext);
     final TypeInfo typeInfo = Converter.obtainTypeFromString(qname) ;
     cl.setTypeInfo(typeInfo);
-    cl.setAnnotations(new AnnotationInstanceInfo[] {});
+    cl.setAnnotations(new ArrayList<AnnotationInstanceInfo>());
     if ("implements".equals(token)) {
       while (true) {
         token = tokenizer.requireToken();
@@ -251,14 +249,14 @@ class ApiFile {
     }
     //method = new MethodInfo(name, cl.qualifiedName(), false/*static*/, false/*final*/, dep,
     //    pub ? "public" : "protected", tokenizer.pos(), cl);
-    method = new MethodInfo(""/*rawCommentText*/, new TypeInfo[0]/*typeParameters*/,
+    method = new MethodInfo(""/*rawCommentText*/, new ArrayList<TypeInfo>()/*typeParameters*/,
         name, null/*signature*/, cl, cl, pub, prot, pkgpriv, false/*isPrivate*/, false/*isFinal*/,
         false/*isStatic*/, false/*isSynthetic*/, false/*isAbstract*/, false/*isSynthetic*/,
         false/*isNative*/,
         false /*isAnnotationElement*/, "constructor", null/*flatSignature*/,
-        null/*overriddenMethod*/, cl.asTypeInfo(), new ParameterInfo[0],
-        new ClassInfo[0]/*thrownExceptions*/, tokenizer.pos(),
-        new AnnotationInstanceInfo[0]/*annotations*/);
+        null/*overriddenMethod*/, cl.asTypeInfo(), new ArrayList<ParameterInfo>(),
+        new ArrayList<ClassInfo>()/*thrownExceptions*/, tokenizer.pos(),
+        new ArrayList<AnnotationInstanceInfo>()/*annotations*/);
     method.setDeprecated(dep);
     token = tokenizer.requireToken();
     parseParameterList(tokenizer, method, token);
@@ -321,13 +319,13 @@ class ApiFile {
     token = tokenizer.requireToken();
     assertIdent(tokenizer, token);
     name = token;
-    method = new MethodInfo(""/*rawCommentText*/, new TypeInfo[0]/*typeParameters*/,
+    method = new MethodInfo(""/*rawCommentText*/, new ArrayList<TypeInfo>()/*typeParameters*/,
         name, null/*signature*/, cl, cl, pub, prot, pkgpriv, false/*isPrivate*/, fin,
         stat, false/*isSynthetic*/, abs/*isAbstract*/, syn, false/*isNative*/,
         false /*isAnnotationElement*/, "method", null/*flatSignature*/, null/*overriddenMethod*/,
-        Converter.obtainTypeFromString(type), new ParameterInfo[0],
-        new ClassInfo[0]/*thrownExceptions*/, tokenizer.pos(),
-        new AnnotationInstanceInfo[0]/*annotations*/);
+        Converter.obtainTypeFromString(type), new ArrayList<ParameterInfo>(),
+        new ArrayList<ClassInfo>()/*thrownExceptions*/, tokenizer.pos(),
+        new ArrayList<AnnotationInstanceInfo>()/*annotations*/);
     method.setDeprecated(dep);
     token = tokenizer.requireToken();
     if (!"(".equals(token)) {
@@ -412,7 +410,7 @@ class ApiFile {
     }
     field = new FieldInfo(name, cl, cl, pub, prot, pkgpriv, false/*isPrivate*/, fin, stat,
         trans, vol, false, Converter.obtainTypeFromString(type), "", v, tokenizer.pos(),
-        new AnnotationInstanceInfo[0]);
+        new ArrayList<AnnotationInstanceInfo>());
     field.setDeprecated(dep);
     if (isEnum) {
       cl.addEnumConstant(field);

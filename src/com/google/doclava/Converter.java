@@ -18,8 +18,10 @@ package com.google.doclava;
 
 import com.sun.javadoc.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
 
 public class Converter {
   private static RootDoc root;
@@ -73,18 +75,31 @@ public class Converter {
     } else {
       annotationElements = new MethodDoc[0];
     }
-    cl.init(Converter.obtainType(c), Converter.convertClasses(c.interfaces()), Converter
-        .convertTypes(c.interfaceTypes()), Converter.convertClasses(c.innerClasses()), Converter
-        .convertMethods(c.constructors(false)), Converter.convertMethods(c.methods(false)),
-        Converter.convertMethods(annotationElements), Converter.convertFields(c.fields(false)),
-        Converter.convertFields(c.enumConstants()), Converter.obtainPackage(c.containingPackage()),
-        Converter.obtainClass(c.containingClass()), Converter.obtainClass(c.superclass()),
-        Converter.obtainType(c.superclassType()), Converter.convertAnnotationInstances(c
-            .annotations()));
-    cl.setHiddenMethods(Converter.getHiddenMethods(c.methods(false)));
-    cl.setNonWrittenConstructors(Converter.convertNonWrittenConstructors(c.constructors(false)));
-    cl.init3(Converter.convertTypes(c.typeParameters()), Converter.convertClasses(c
-        .innerClasses(false)));
+    cl.init(Converter.obtainType(c),
+            new ArrayList<ClassInfo>(Arrays.asList(Converter.convertClasses(c.interfaces()))),
+            new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(c.interfaceTypes()))),
+            new ArrayList<ClassInfo>(Arrays.asList(Converter.convertClasses(c.innerClasses()))),
+            new ArrayList<MethodInfo>(Arrays.asList(
+                    Converter.convertMethods(c.constructors(false)))),
+            new ArrayList<MethodInfo>(Arrays.asList(Converter.convertMethods(c.methods(false)))),
+            new ArrayList<MethodInfo>(Arrays.asList(Converter.convertMethods(annotationElements))),
+            new ArrayList<FieldInfo>(Arrays.asList(Converter.convertFields(c.fields(false)))),
+            new ArrayList<FieldInfo>(Arrays.asList(Converter.convertFields(c.enumConstants()))),
+            Converter.obtainPackage(c.containingPackage()),
+            Converter.obtainClass(c.containingClass()),
+            Converter.obtainClass(c.superclass()), Converter.obtainType(c.superclassType()),
+            new ArrayList<AnnotationInstanceInfo>(Arrays.asList(
+                    Converter.convertAnnotationInstances(c.annotations()))));
+
+    cl.setHiddenMethods(
+            new ArrayList<MethodInfo>(Arrays.asList(Converter.getHiddenMethods(c.methods(false)))));
+    cl.setNonWrittenConstructors(
+            new ArrayList<MethodInfo>(Arrays.asList(Converter.convertNonWrittenConstructors(
+                    c.constructors(false)))));
+    cl.init3(
+            new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(c.typeParameters()))),
+            new ArrayList<ClassInfo>(Arrays.asList(
+                    Converter.convertClasses(c.innerClasses(false)))));
   }
 
   public static ClassInfo obtainClass(String className) {
@@ -96,8 +111,8 @@ public class Converter {
   }
 
   private static TagInfo convertTag(Tag tag) {
-    return new TextTagInfo(tag.name(), tag.kind(), tag.text(), Converter.convertSourcePosition(tag
-        .position()));
+    return new TextTagInfo(tag.name(), tag.kind(), tag.text(),
+            Converter.convertSourcePosition(tag.position()));
   }
 
   private static ThrowsTagInfo convertThrowsTag(ThrowsTag tag, ContainerInfo base) {
@@ -319,44 +334,57 @@ public class Converter {
       if (o instanceof AnnotationTypeElementDoc) {
         AnnotationTypeElementDoc m = (AnnotationTypeElementDoc) o;
         MethodInfo result =
-            new MethodInfo(m.getRawCommentText(), Converter.convertTypes(m.typeParameters()), m
-                .name(), m.signature(), Converter.obtainClass(m.containingClass()), Converter
-                .obtainClass(m.containingClass()), m.isPublic(), m.isProtected(), m
-                .isPackagePrivate(), m.isPrivate(), m.isFinal(), m.isStatic(), m.isSynthetic(), m
-                .isAbstract(), m.isSynchronized(), m.isNative(), true, "annotationElement", m
-                .flatSignature(), Converter.obtainMethod(m.overriddenMethod()), Converter
-                .obtainType(m.returnType()), Converter.convertParameters(m.parameters(), m),
-                Converter.convertClasses(m.thrownExceptions()), Converter.convertSourcePosition(m
-                    .position()), Converter.convertAnnotationInstances(m.annotations()));
+            new MethodInfo(m.getRawCommentText(),
+                    new ArrayList<TypeInfo>(Arrays.asList(
+                            Converter.convertTypes(m.typeParameters()))),
+                    m.name(), m.signature(), Converter.obtainClass(m.containingClass()),
+                    Converter.obtainClass(m.containingClass()), m.isPublic(), m.isProtected(), m
+                    .isPackagePrivate(), m.isPrivate(), m.isFinal(), m.isStatic(), m.isSynthetic(),
+                    m.isAbstract(), m.isSynchronized(), m.isNative(), true, "annotationElement",
+                    m.flatSignature(), Converter.obtainMethod(m.overriddenMethod()),
+                    Converter.obtainType(m.returnType()),
+                    new ArrayList<ParameterInfo>(Arrays.asList(
+                            Converter.convertParameters(m.parameters(), m))),
+                    new ArrayList<ClassInfo>(Arrays.asList(Converter.convertClasses(
+                            m.thrownExceptions()))), Converter.convertSourcePosition(m.position()),
+                    new ArrayList<AnnotationInstanceInfo>(Arrays.asList(
+                            Converter.convertAnnotationInstances(m.annotations()))));
         result.setVarargs(m.isVarArgs());
         result.init(Converter.obtainAnnotationValue(m.defaultValue(), result));
         return result;
       } else if (o instanceof MethodDoc) {
         MethodDoc m = (MethodDoc) o;
         MethodInfo result =
-            new MethodInfo(m.getRawCommentText(), Converter.convertTypes(m.typeParameters()), m
-                .name(), m.signature(), Converter.obtainClass(m.containingClass()), Converter
-                .obtainClass(m.containingClass()), m.isPublic(), m.isProtected(), m
-                .isPackagePrivate(), m.isPrivate(), m.isFinal(), m.isStatic(), m.isSynthetic(), m
-                .isAbstract(), m.isSynchronized(), m.isNative(), false, "method",
-                m.flatSignature(), Converter.obtainMethod(m.overriddenMethod()), Converter
-                    .obtainType(m.returnType()), Converter.convertParameters(m.parameters(), m),
-                Converter.convertClasses(m.thrownExceptions()), Converter.convertSourcePosition(m
-                    .position()), Converter.convertAnnotationInstances(m.annotations()));
+            new MethodInfo(m.getRawCommentText(),
+                    new ArrayList<TypeInfo>(Arrays.asList(
+                            Converter.convertTypes(m.typeParameters()))), m.name(), m.signature(),
+                    Converter.obtainClass(m.containingClass()),
+                    Converter.obtainClass(m.containingClass()), m.isPublic(), m.isProtected(),
+                    m.isPackagePrivate(), m.isPrivate(), m.isFinal(), m.isStatic(), m.isSynthetic(),
+                    m.isAbstract(), m.isSynchronized(), m.isNative(), false, "method",
+                    m.flatSignature(), Converter.obtainMethod(m.overriddenMethod()),
+                    Converter.obtainType(m.returnType()),
+                    new ArrayList<ParameterInfo>(Arrays.asList(
+                            Converter.convertParameters(m.parameters(), m))),
+                    new ArrayList<ClassInfo>(Arrays.asList(
+                            Converter.convertClasses(m.thrownExceptions()))),
+                    Converter.convertSourcePosition(m.position()),
+                    new ArrayList<AnnotationInstanceInfo>(Arrays.asList(
+                            Converter.convertAnnotationInstances(m.annotations()))));
         result.setVarargs(m.isVarArgs());
         result.init(null);
         return result;
       } else {
         ConstructorDoc m = (ConstructorDoc) o;
         MethodInfo result =
-            new MethodInfo(m.getRawCommentText(), Converter.convertTypes(m.typeParameters()), m
+            new MethodInfo(m.getRawCommentText(), new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(m.typeParameters()))), m
                 .name(), m.signature(), Converter.obtainClass(m.containingClass()), Converter
                 .obtainClass(m.containingClass()), m.isPublic(), m.isProtected(), m
                 .isPackagePrivate(), m.isPrivate(), m.isFinal(), m.isStatic(), m.isSynthetic(),
                 false, m.isSynchronized(), m.isNative(), false, "constructor", m.flatSignature(),
-                null, null, Converter.convertParameters(m.parameters(), m), Converter
-                    .convertClasses(m.thrownExceptions()), Converter.convertSourcePosition(m
-                    .position()), Converter.convertAnnotationInstances(m.annotations()));
+                null, null, new ArrayList<ParameterInfo>(Arrays.asList(Converter.convertParameters(m.parameters(), m))),
+                new ArrayList<ClassInfo>(Arrays.asList(Converter.convertClasses(m.thrownExceptions()))), Converter.convertSourcePosition(m
+                    .position()), new ArrayList<AnnotationInstanceInfo>(Arrays.asList(Converter.convertAnnotationInstances(m.annotations()))));
         result.setVarargs(m.isVarArgs());
         result.init(null);
         return result;
@@ -394,8 +422,9 @@ public class Converter {
           .obtainClass(f.containingClass()), f.isPublic(), f.isProtected(), f.isPackagePrivate(), f
           .isPrivate(), f.isFinal(), f.isStatic(), f.isTransient(), f.isVolatile(),
           f.isSynthetic(), Converter.obtainType(f.type()), f.getRawCommentText(),
-          f.constantValue(), Converter.convertSourcePosition(f.position()), Converter
-              .convertAnnotationInstances(f.annotations()));
+          f.constantValue(), Converter.convertSourcePosition(f.position()),
+          new ArrayList<AnnotationInstanceInfo>(Arrays.asList(Converter
+              .convertAnnotationInstances(f.annotations()))));
     }
   };
 
@@ -436,16 +465,16 @@ public class Converter {
       Type t = (Type) o;
       TypeInfo ti = (TypeInfo) r;
       if (t.asParameterizedType() != null) {
-        ti.setTypeArguments(Converter.convertTypes(t.asParameterizedType().typeArguments()));
+        ti.setTypeArguments(new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(t.asParameterizedType().typeArguments()))));
       } else if (t instanceof ClassDoc) {
-        ti.setTypeArguments(Converter.convertTypes(((ClassDoc) t).typeParameters()));
+        ti.setTypeArguments(new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(((ClassDoc) t).typeParameters()))));
       } else if (t.asTypeVariable() != null) {
-        ti.setBounds(null, Converter.convertTypes((t.asTypeVariable().bounds())));
+        ti.setBounds(null, new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes((t.asTypeVariable().bounds())))));
         ti.setIsTypeVariable(true);
       } else if (t.asWildcardType() != null) {
         ti.setIsWildcard(true);
-        ti.setBounds(Converter.convertTypes(t.asWildcardType().superBounds()), Converter
-            .convertTypes(t.asWildcardType().extendsBounds()));
+        ti.setBounds(new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(t.asWildcardType().superBounds()))),
+                new ArrayList<TypeInfo>(Arrays.asList(Converter.convertTypes(t.asWildcardType().extendsBounds()))));
       }
     }
 
@@ -634,11 +663,11 @@ public class Converter {
       converted = Converter.obtainAnnotationInstance((AnnotationDesc) orig);
     } else if (orig instanceof AnnotationValue[]) {
       AnnotationValue[] old = (AnnotationValue[]) orig;
-      AnnotationValueInfo[] array = new AnnotationValueInfo[old.length];
-      for (int i = 0; i < array.length; i++) {
-        array[i] = Converter.obtainAnnotationValue(old[i], null);
+      ArrayList<AnnotationValueInfo> values = new ArrayList<AnnotationValueInfo>();
+      for (int i = 0; i < old.length; i++) {
+        values.add(Converter.obtainAnnotationValue(old[i], null));
       }
-      converted = array;
+      converted = values;
     } else {
       converted = orig;
     }

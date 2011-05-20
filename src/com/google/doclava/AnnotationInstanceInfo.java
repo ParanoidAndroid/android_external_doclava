@@ -16,41 +16,83 @@
 
 package com.google.doclava;
 
-public class AnnotationInstanceInfo {
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class AnnotationInstanceInfo implements Resolvable {
   private ClassInfo mType;
-  private AnnotationValueInfo[] mElementValues;
+  private String mName; // for temp purposes
+  private ArrayList<AnnotationValueInfo> mElementValues;
+  private ArrayList<Resolution> mResolutions;
+
+  public AnnotationInstanceInfo() {
+      mType = null;
+      mElementValues = new ArrayList<AnnotationValueInfo>();
+    }
 
   public AnnotationInstanceInfo(ClassInfo type, AnnotationValueInfo[] elementValues) {
     mType = type;
-    mElementValues = elementValues;
+    mElementValues = new ArrayList<AnnotationValueInfo>(Arrays.asList(elementValues));
   }
 
   ClassInfo type() {
     return mType;
   }
 
-  AnnotationValueInfo[] elementValues() {
+  public void setClass(ClassInfo cl) {
+      mType = cl;
+  }
+
+  public void setClassName(String name) {
+      mName = name;
+  }
+
+  ArrayList<AnnotationValueInfo> elementValues() {
     return mElementValues;
+  }
+
+  public void addElementValue(AnnotationValueInfo info) {
+      mElementValues.add(info);
   }
 
   @Override
   public String toString() {
     StringBuilder str = new StringBuilder();
     str.append("@");
-    str.append(mType.qualifiedName());
+    if (mType == null) {
+        str.append(mName);
+    } else {
+        str.append(mType.qualifiedName());
+    }
     str.append("(");
-    AnnotationValueInfo[] values = mElementValues;
-    final int N = values.length;
-    for (int i = 0; i < N; i++) {
-      AnnotationValueInfo value = values[i];
-      str.append(value.element().name());
-      str.append("=");
+
+    for (AnnotationValueInfo value : mElementValues) {
+      if (value.element() != null) {
+          str.append(value.element().name());
+          str.append("=");
+      }
+
       str.append(value.valueString());
-      if (i != N - 1) {
+      if (value != mElementValues.get(mElementValues.size()-1)) {
         str.append(",");
       }
     }
     str.append(")");
     return str.toString();
+  }
+
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new ArrayList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public void printResolutions() {
+      System.out.println("Resolutions for Annotation:");
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
   }
 }

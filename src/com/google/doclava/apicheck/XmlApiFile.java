@@ -16,27 +16,26 @@
 
 package com.google.doclava.apicheck;
 
-import java.io.InputStream;
-import java.util.Stack;
-
-import com.sun.javadoc.ClassDoc;
-
 import com.google.doclava.AnnotationInstanceInfo;
 import com.google.doclava.ClassInfo;
 import com.google.doclava.Converter;
-import com.google.doclava.Errors;
 import com.google.doclava.FieldInfo;
 import com.google.doclava.MethodInfo;
 import com.google.doclava.PackageInfo;
 import com.google.doclava.ParameterInfo;
 import com.google.doclava.SourcePositionInfo;
 import com.google.doclava.TypeInfo;
+import com.sun.javadoc.ClassDoc;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Stack;
 
 class XmlApiFile extends DefaultHandler {
 
@@ -119,10 +118,10 @@ class XmlApiFile extends DefaultHandler {
       
       TypeInfo typeInfo = Converter.obtainTypeFromString(qualifiedName) ;
       mCurrentClass.setTypeInfo(typeInfo);
-      mCurrentClass.setAnnotations(new AnnotationInstanceInfo[] {});
+      mCurrentClass.setAnnotations(new ArrayList<AnnotationInstanceInfo>());
     } else if (qName.equals("method")) {
       String rawCommentText = "";
-      TypeInfo[] typeParameters = new TypeInfo[0];
+      ArrayList<TypeInfo> typeParameters = new ArrayList<TypeInfo>();
       String name = attributes.getValue("name");
       String signature = null; // TODO
       ClassInfo containingClass = mCurrentClass;
@@ -143,10 +142,10 @@ class XmlApiFile extends DefaultHandler {
       String flatSignature = null; // TODO
       MethodInfo overriddenMethod = null; // TODO
       TypeInfo returnType = Converter.obtainTypeFromString(attributes.getValue("return"));
-      ParameterInfo[] parameters = new ParameterInfo[0];
-      ClassInfo[] thrownExceptions = new ClassInfo[0];
+      ArrayList<ParameterInfo> parameters = new ArrayList<ParameterInfo>();
+      ArrayList<ClassInfo> thrownExceptions = new ArrayList<ClassInfo>();
       SourcePositionInfo position = SourcePositionInfo.fromXml(attributes.getValue("source"));
-      AnnotationInstanceInfo[] annotations = new AnnotationInstanceInfo[] {}; // TODO
+      ArrayList<AnnotationInstanceInfo> annotations = new ArrayList<AnnotationInstanceInfo>(); // TODO
       
       mCurrentMethod = 
           new MethodInfo(rawCommentText, typeParameters, name, signature, containingClass,
@@ -161,15 +160,15 @@ class XmlApiFile extends DefaultHandler {
       final boolean prot = "protected".equals(attributes.getValue("visibility"));
       final boolean pkgpriv = "".equals(attributes.getValue("visibility"));
       mCurrentMethod =
-         new MethodInfo(""/*rawCommentText*/, new TypeInfo[0]/*typeParameters*/,
+         new MethodInfo(""/*rawCommentText*/, new ArrayList<TypeInfo>()/*typeParameters*/,
               attributes.getValue("name"), null/*signature*/, mCurrentClass, mCurrentClass,
               pub, prot, pkgpriv, false/*isPrivate*/, false/*isFinal*/, false/*isStatic*/,
               false/*isSynthetic*/, false/*isAbstract*/, false/*isSynthetic*/, false/*isNative*/,
               false /*isAnnotationElement*/, "constructor", null/*flatSignature*/,
-              null/*overriddenMethod*/, mCurrentClass.asTypeInfo(), new ParameterInfo[0],
-              new ClassInfo[0]/*thrownExceptions*/,
+              null/*overriddenMethod*/, mCurrentClass.asTypeInfo(), new ArrayList<ParameterInfo>(),
+              new ArrayList<ClassInfo>()/*thrownExceptions*/,
               SourcePositionInfo.fromXml(attributes.getValue("source")),
-              new AnnotationInstanceInfo[0]/*annotations*/);
+              new ArrayList<AnnotationInstanceInfo>()/*annotations*/);
       mCurrentMethod.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
     } else if (qName.equals("field")) {
       String visibility = attributes.getValue("visibility");
@@ -193,7 +192,7 @@ class XmlApiFile extends DefaultHandler {
           Boolean.valueOf(attributes.getValue("static")), Boolean.valueOf(attributes.
           getValue("transient")), Boolean.valueOf(attributes.getValue("volatile")), false,
           type, "", value, SourcePositionInfo.fromXml(attributes.getValue("source")),
-          new AnnotationInstanceInfo[] {});
+          new ArrayList<AnnotationInstanceInfo>());
       
       fInfo.setDeprecated("deprecated".equals(attributes.getValue("deprecated")));
       mCurrentClass.addField(fInfo);

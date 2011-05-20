@@ -21,12 +21,12 @@ import com.google.doclava.apicheck.ApiCheck;
 import com.google.doclava.apicheck.ApiInfo;
 import com.google.doclava.apicheck.ApiParseException;
 
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 
 /**
@@ -217,7 +217,7 @@ public class SinceTagger {
   /**
    * Returns the DocInfos in {@code all} that are documented but do not have since tags.
    */
-  private <T extends MemberInfo> Iterable<T> missingVersions(T[] all) {
+  private <T extends MemberInfo> Iterable<T> missingVersions(ArrayList<T> all) {
     List<T> result = Collections.emptyList();
     for (T t : all) {
       // if this member has version info or isn't documented, skip it

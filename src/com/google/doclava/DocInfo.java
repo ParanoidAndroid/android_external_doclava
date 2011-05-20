@@ -19,9 +19,10 @@ package com.google.doclava;
 import com.google.clearsilver.jsilver.data.Data;
 
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Set;
 
-public abstract class DocInfo {
+public abstract class DocInfo implements Resolvable {
   public DocInfo(String rawCommentText, SourcePositionInfo sp) {
     mRawCommentText = rawCommentText;
     mPosition = sp;
@@ -44,6 +45,16 @@ public abstract class DocInfo {
     return mRawCommentText;
   }
 
+  public void setRawCommentText(String rawCommentText) {
+      mRawCommentText = rawCommentText;
+
+      // so that if we've created one prior to changing, we recreate it
+      if (mComment != null) {
+          mComment = new Comment(mRawCommentText, parent(), mPosition);
+      }
+
+  }
+
   public Comment comment() {
     if (mComment == null) {
       mComment = new Comment(mRawCommentText, parent(), mPosition);
@@ -53,6 +64,15 @@ public abstract class DocInfo {
 
   public SourcePositionInfo position() {
     return mPosition;
+  }
+
+  public void setPosition(SourcePositionInfo position) {
+      mPosition = position;
+
+      // so that if we've created one prior to changing, we recreate it
+      if (mComment != null) {
+          mComment = new Comment(mRawCommentText, parent(), mPosition);
+      }
   }
 
   public abstract ContainerInfo parent();
@@ -82,9 +102,24 @@ public abstract class DocInfo {
     }
   }
 
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new LinkedList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public void printResolutions() {
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
+  }
+
   private String mRawCommentText;
   Comment mComment;
   SourcePositionInfo mPosition;
   private String mSince;
   private Set<FederatedSite> mFederatedReferences = new LinkedHashSet<FederatedSite>();
+  private LinkedList<Resolution> mResolutions;
 }

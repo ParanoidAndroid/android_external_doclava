@@ -17,10 +17,20 @@
 package com.google.doclava;
 
 import com.google.clearsilver.jsilver.data.Data;
-import com.google.doclava.apicheck.ApiInfo;
+import com.sun.javadoc.ClassDoc;
 
-import com.sun.javadoc.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.Vector;
 
 public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Scoped {
   public static final Comparator<ClassInfo> comparator = new Comparator<ClassInfo>() {
@@ -50,14 +60,34 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   }
 
   public ClassInfo(ClassDoc cl, String rawCommentText, SourcePositionInfo position,
-      boolean isPublic, boolean isProtected, boolean isPackagePrivate, boolean isPrivate,
-      boolean isStatic, boolean isInterface, boolean isAbstract, boolean isOrdinaryClass,
-      boolean isException, boolean isError, boolean isEnum, boolean isAnnotation, boolean isFinal,
-      boolean isIncluded, String name, String qualifiedName, String qualifiedTypeName,
-      boolean isPrimitive) {
-    super(rawCommentText, position);
+          boolean isPublic, boolean isProtected, boolean isPackagePrivate, boolean isPrivate,
+          boolean isStatic, boolean isInterface, boolean isAbstract, boolean isOrdinaryClass,
+          boolean isException, boolean isError, boolean isEnum, boolean isAnnotation, boolean isFinal,
+          boolean isIncluded, String name, String qualifiedName, String qualifiedTypeName,
+          boolean isPrimitive) {
+      super(rawCommentText, position);
 
-    mClass = cl;
+      initialize(rawCommentText, position,
+              isPublic, isProtected, isPackagePrivate, isPrivate,
+              isStatic, isInterface, isAbstract, isOrdinaryClass,
+              isException, isError, isEnum, isAnnotation, isFinal,
+              isIncluded, qualifiedTypeName, isPrimitive, null);
+
+      mName = name;
+      mQualifiedName = qualifiedName;
+      mNameParts = name.split("\\.");
+      mClass = cl;
+  }
+
+  public void initialize(String rawCommentText, SourcePositionInfo position,
+          boolean isPublic, boolean isProtected, boolean isPackagePrivate, boolean isPrivate,
+          boolean isStatic, boolean isInterface, boolean isAbstract, boolean isOrdinaryClass,
+          boolean isException, boolean isError, boolean isEnum, boolean isAnnotation, boolean isFinal,
+          boolean isIncluded, String qualifiedTypeName, boolean isPrimitive, ArrayList<AnnotationInstanceInfo> annotations) {
+
+    // calls
+    setPosition(position);
+    setRawCommentText(rawCommentText);
     mIsPublic = isPublic;
     mIsProtected = isProtected;
     mIsPackagePrivate = isPackagePrivate;
@@ -72,23 +102,20 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     mIsAnnotation = isAnnotation;
     mIsFinal = isFinal;
     mIsIncluded = isIncluded;
-    mName = name;
-    mQualifiedName = qualifiedName;
     mQualifiedTypeName = qualifiedTypeName;
     mIsPrimitive = isPrimitive;
-    mNameParts = name.split("\\.");
+    mAnnotations = annotations;
   }
 
-  public void init(TypeInfo typeInfo, ClassInfo[] interfaces, TypeInfo[] interfaceTypes,
-      ClassInfo[] innerClasses, MethodInfo[] constructors, MethodInfo[] methods,
-      MethodInfo[] annotationElements, FieldInfo[] fields, FieldInfo[] enumConstants,
-      PackageInfo containingPackage, ClassInfo containingClass, ClassInfo superclass,
-      TypeInfo superclassType, AnnotationInstanceInfo[] annotations) {
+  public void init(TypeInfo typeInfo, ArrayList<ClassInfo> interfaces,
+          ArrayList<TypeInfo> interfaceTypes, ArrayList<ClassInfo> innerClasses,
+          ArrayList<MethodInfo> constructors, ArrayList<MethodInfo> methods,
+          ArrayList<MethodInfo> annotationElements, ArrayList<FieldInfo> fields,
+          ArrayList<FieldInfo> enumConstants, PackageInfo containingPackage,
+          ClassInfo containingClass, ClassInfo superclass,
+      TypeInfo superclassType, ArrayList<AnnotationInstanceInfo> annotations) {
     mTypeInfo = typeInfo;
-    mRealInterfaces = new ArrayList<ClassInfo>();
-    for (ClassInfo cl : interfaces) {
-      mRealInterfaces.add(cl);
-    }
+    mRealInterfaces = new ArrayList<ClassInfo>(interfaces);
     mRealInterfaceTypes = interfaceTypes;
     mInnerClasses = innerClasses;
     mAllConstructors = constructors;
@@ -113,8 +140,8 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     mSelfAttributes = null;
     mDeprecatedKnown = false;
 
-    Arrays.sort(mEnumConstants, FieldInfo.comparator);
-    Arrays.sort(mInnerClasses, ClassInfo.comparator);
+    Collections.sort(mEnumConstants, FieldInfo.comparator);
+    Collections.sort(mInnerClasses, ClassInfo.comparator);
   }
 
   public void init2() {
@@ -123,16 +150,16 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     selfAttributes();
   }
 
-  public void init3(TypeInfo[] types, ClassInfo[] realInnerClasses) {
+  public void init3(ArrayList<TypeInfo> types, ArrayList<ClassInfo> realInnerClasses) {
     mTypeParameters = types;
     mRealInnerClasses = realInnerClasses;
   }
 
-  public ClassInfo[] getRealInnerClasses() {
+  public ArrayList<ClassInfo> getRealInnerClasses() {
     return mRealInnerClasses;
   }
 
-  public TypeInfo[] getTypeParameters() {
+  public ArrayList<TypeInfo> getTypeParameters() {
     return mTypeParameters;
   }
 
@@ -229,7 +256,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     HashSet<String> result = TypeInfo.typeVariables(mTypeInfo.typeArguments());
     ClassInfo cl = containingClass();
     while (cl != null) {
-      TypeInfo[] types = cl.asTypeInfo().typeArguments();
+      ArrayList<TypeInfo> types = cl.asTypeInfo().typeArguments();
       if (types != null) {
         TypeInfo.typeVariables(types, result);
       }
@@ -248,7 +275,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
   }
 
-  public ClassInfo[] interfaces() {
+  public ArrayList<ClassInfo> interfaces() {
     if (mInterfaces == null) {
       if (checkLevel()) {
         HashSet<ClassInfo> interfaces = new HashSet<ClassInfo>();
@@ -258,24 +285,30 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
           superclass = superclass.mRealSuperclass;
         }
         gatherHiddenInterfaces(this, interfaces);
-        mInterfaces = interfaces.toArray(new ClassInfo[interfaces.size()]);
+        mInterfaces = new ArrayList<ClassInfo>(interfaces);
       } else {
         // put something here in case someone uses it
-        mInterfaces = new ClassInfo[mRealInterfaces.size()];
-        mRealInterfaces.toArray(mInterfaces);
+        mInterfaces = new ArrayList<ClassInfo>(mRealInterfaces);
       }
-      Arrays.sort(mInterfaces, ClassInfo.qualifiedComparator);
+      Collections.sort(mInterfaces, ClassInfo.qualifiedComparator);
     }
     return mInterfaces;
   }
 
-  public ClassInfo[] realInterfaces() {
-    ClassInfo[] classInfos = new ClassInfo[mRealInterfaces.size()];
-    return mRealInterfaces.toArray(classInfos);
+  public ArrayList<ClassInfo> realInterfaces() {
+    return mRealInterfaces;
   }
 
-  TypeInfo[] realInterfaceTypes() {
+  ArrayList<TypeInfo> realInterfaceTypes() {
     return mRealInterfaceTypes;
+  }
+
+  public void addInterfaceType(TypeInfo type) {
+      if (mRealInterfaceTypes == null) {
+          mRealInterfaceTypes = new ArrayList<TypeInfo>();
+      }
+
+      mRealInterfaceTypes.add(type);
   }
 
   public String name() {
@@ -302,30 +335,29 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return mIsPrimitive;
   }
 
-  public MethodInfo[] allConstructors() {
+  public ArrayList<MethodInfo> allConstructors() {
     return mAllConstructors;
   }
 
-  public MethodInfo[] constructors() {
+  public ArrayList<MethodInfo> constructors() {
     if (mConstructors == null) {
-      MethodInfo[] methods = mAllConstructors;
-      if (methods == null) {
-        return new MethodInfo[0];
+      if (mAllConstructors == null) {
+        return new ArrayList<MethodInfo>();
       }
-      ArrayList<MethodInfo> ctors = new ArrayList<MethodInfo>();
-      for (int i = 0; i < methods.length; i++) {
-        MethodInfo m = methods[i];
+
+      mConstructors = new ArrayList<MethodInfo>();
+      for (MethodInfo m : mAllConstructors) {
         if (!m.isHidden()) {
-          ctors.add(m);
+            mConstructors.add(m);
         }
       }
-      mConstructors = ctors.toArray(new MethodInfo[ctors.size()]);
-      Arrays.sort(mConstructors, MethodInfo.comparator);
+
+      Collections.sort(mConstructors, MethodInfo.comparator);
     }
     return mConstructors;
   }
 
-  public ClassInfo[] innerClasses() {
+  public ArrayList<ClassInfo> innerClasses() {
     return mInnerClasses;
   }
 
@@ -343,7 +375,6 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   }
 
   public boolean isDeprecated() {
-    boolean deprecated = false;
     if (!mDeprecatedKnown) {
       boolean commentDeprecated = comment().isDeprecated();
       boolean annotationDeprecated = false;
@@ -370,68 +401,56 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return comment().deprecatedTags();
   }
 
-  public MethodInfo[] methods() {
-    if (mMethods == null) {
-      TreeMap<String, MethodInfo> all = new TreeMap<String, MethodInfo>();
+  public ArrayList<MethodInfo> methods() {
+      if (mMethods == null) {
+          TreeMap<String, MethodInfo> all = new TreeMap<String, MethodInfo>();
 
-      ClassInfo[] ifaces = interfaces();
-      for (ClassInfo iface : ifaces) {
-        if (iface != null) {
-          MethodInfo[] inhereted = iface.methods();
-          for (MethodInfo method : inhereted) {
-            String key = method.getHashableName();
-            all.put(key, method);
+          ArrayList<ClassInfo> interfaces = interfaces();
+          for (ClassInfo iface : interfaces) {
+            if (iface != null) {
+              for (MethodInfo method : iface.methods()) {
+                all.put(method.getHashableName(), method);
+              }
+            }
           }
-        }
-      }
 
-      ClassInfo superclass = superclass();
-      if (superclass != null) {
-        MethodInfo[] inhereted = superclass.methods();
-        for (MethodInfo method : inhereted) {
-          String key = method.getHashableName();
-          all.put(key, method);
-        }
-      }
+          ClassInfo superclass = superclass();
+          if (superclass != null) {
+            for (MethodInfo method : superclass.methods()) {
+                all.put(method.getHashableName(), method);
+            }
+          }
 
-      MethodInfo[] methods = selfMethods();
-      for (MethodInfo method : methods) {
-        String key = method.getHashableName();
-        all.put(key, method);
-      }
+          for (MethodInfo method : selfMethods()) {
+              all.put(method.getHashableName(), method);
+          }
 
-      mMethods = all.values().toArray(new MethodInfo[all.size()]);
-      Arrays.sort(mMethods, MethodInfo.comparator);
-    }
+          mMethods = new ArrayList<MethodInfo>(all.values());
+          Collections.sort(mMethods, MethodInfo.comparator);
+      }
     return mMethods;
   }
 
-  public MethodInfo[] annotationElements() {
+  public ArrayList<MethodInfo> annotationElements() {
     return mAnnotationElements;
   }
 
-  public AnnotationInstanceInfo[] annotations() {
+  public ArrayList<AnnotationInstanceInfo> annotations() {
     return mAnnotations;
   }
 
   private static void addFields(ClassInfo cl, TreeMap<String, FieldInfo> all) {
-    FieldInfo[] fields = cl.fields();
-    int N = fields.length;
-    for (int i = 0; i < N; i++) {
-      FieldInfo f = fields[i];
-      all.put(f.name(), f);
+    for (FieldInfo field : cl.fields()) {
+        all.put(field.name(), field);
     }
   }
 
-  public FieldInfo[] fields() {
+  public ArrayList<FieldInfo> fields() {
     if (mFields == null) {
-      int N;
       TreeMap<String, FieldInfo> all = new TreeMap<String, FieldInfo>();
 
-      ClassInfo[] interfaces = interfaces();
-      N = interfaces.length;
-      for (int i = 0; i < N; i++) {
-        addFields(interfaces[i], all);
+      for (ClassInfo iface : interfaces()) {
+        addFields(iface, all);
       }
 
       ClassInfo superclass = superclass();
@@ -439,33 +458,28 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
         addFields(superclass, all);
       }
 
-      FieldInfo[] fields = selfFields();
-      N = fields.length;
-      for (int i = 0; i < N; i++) {
-        FieldInfo f = fields[i];
-        if (!f.isHidden()) {
-          String key = f.name();
-          all.put(key, f);
+      for (FieldInfo field : selfFields()) {
+        if (!field.isHidden()) {
+            all.put(field.name(), field);
         }
       }
 
-      mFields = all.values().toArray(new FieldInfo[0]);
+      mFields = new ArrayList<FieldInfo>(all.values());
     }
     return mFields;
   }
 
   public void gatherFields(ClassInfo owner, ClassInfo cl, HashMap<String, FieldInfo> fields) {
-    FieldInfo[] flds = cl.selfFields();
-    for (FieldInfo f : flds) {
+    for (FieldInfo f : cl.selfFields()) {
       if (f.checkLevel()) {
         fields.put(f.name(), f.cloneForClass(owner));
       }
     }
   }
 
-  public FieldInfo[] selfFields() {
+  public ArrayList<FieldInfo> selfFields() {
     if (mSelfFields == null) {
-      HashMap<String, FieldInfo> fields = new HashMap<String, FieldInfo>();
+        HashMap<String, FieldInfo> fields = new HashMap<String, FieldInfo>();
       // our hidden parents
       if (mRealSuperclass != null && !mRealSuperclass.checkLevel()) {
         gatherFields(this, mRealSuperclass, fields);
@@ -475,37 +489,34 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
           gatherFields(this, iface, fields);
         }
       }
-      // mine
-      FieldInfo[] selfFields = mAllSelfFields;
-      for (int i = 0; i < selfFields.length; i++) {
-        FieldInfo f = selfFields[i];
-        if (!f.isHidden()) {
-          fields.put(f.name(), f);
-        }
+
+      for (FieldInfo f : mAllSelfFields) {
+          if (!f.isHidden()) {
+              fields.put(f.name(), f);
+          }
       }
-      // combine and return in
-      mSelfFields = fields.values().toArray(new FieldInfo[fields.size()]);
-      Arrays.sort(mSelfFields, FieldInfo.comparator);
+
+      mSelfFields = new ArrayList<FieldInfo>(fields.values());
+      Collections.sort(mSelfFields, FieldInfo.comparator);
     }
     return mSelfFields;
   }
 
-  public FieldInfo[] allSelfFields() {
+  public ArrayList<FieldInfo> allSelfFields() {
     return mAllSelfFields;
   }
 
   private void gatherMethods(ClassInfo owner, ClassInfo cl, HashMap<String, MethodInfo> methods) {
-    MethodInfo[] meth = cl.selfMethods();
-    for (MethodInfo m : meth) {
+    for (MethodInfo m : cl.selfMethods()) {
       if (m.checkLevel()) {
         methods.put(m.name() + m.signature(), m.cloneForClass(owner));
       }
     }
   }
 
-  public MethodInfo[] selfMethods() {
+  public ArrayList<MethodInfo> selfMethods() {
     if (mSelfMethods == null) {
-      HashMap<String, MethodInfo> methods = new HashMap<String, MethodInfo>();
+        HashMap<String, MethodInfo> methods = new HashMap<String, MethodInfo>();
       // our hidden parents
       if (mRealSuperclass != null && !mRealSuperclass.checkLevel()) {
         gatherMethods(this, mRealSuperclass, methods);
@@ -517,40 +528,50 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       }
       // mine
       if (mAllSelfMethods != null) {
-        for (int i = 0; i < mAllSelfMethods.length; i++) {
-          MethodInfo m = mAllSelfMethods[i];
+        for (MethodInfo m : mAllSelfMethods) {
           if (m.checkLevel()) {
-            methods.put(m.name() + m.signature(), m);
+              methods.put(m.name() + m.signature(), m);
           }
         }
       }
-      
-      // combine and return it
-      mSelfMethods = methods.values().toArray(new MethodInfo[methods.size()]);
-      Arrays.sort(mSelfMethods, MethodInfo.comparator);
+
+      // sort it
+      mSelfMethods = new ArrayList<MethodInfo>(methods.values());
+      Collections.sort(mSelfMethods, MethodInfo.comparator);
     }
     return mSelfMethods;
   }
 
-  public MethodInfo[] allSelfMethods() {
+  public ArrayList<MethodInfo> allSelfMethods() {
     return mAllSelfMethods;
   }
 
   public void addMethod(MethodInfo method) {
     mApiCheckMethods.put(method.getHashableName(), method);
 
-    MethodInfo[] old = mAllSelfMethods;
-    mAllSelfMethods = new MethodInfo[old.length+1];
-    System.arraycopy(old, 0, mAllSelfMethods, 0, old.length);
-    mAllSelfMethods[mAllSelfMethods.length-1] = method;
+    mAllSelfMethods.add(method);
     mSelfMethods = null; // flush this, hopefully it hasn't been used yet.
   }
-  
-  public void setContainingPackage(PackageInfo pkg) {
-    mContainingPackage = pkg;
+
+  public void addAnnotationElement(MethodInfo method) {
+      mAnnotationElements.add(method);
   }
 
-  public AttributeInfo[] selfAttributes() {
+  public void setContainingPackage(PackageInfo pkg) {
+    mContainingPackage = pkg;
+
+    if (mContainingPackage != null) {
+        if (mIsEnum) {
+            mContainingPackage.addEnum(this);
+        } else if (mIsInterface) {
+            mContainingPackage.addInterface(this);
+        } else {
+            mContainingPackage.addOrdinaryClass(this);
+        }
+    }
+  }
+
+  public ArrayList<AttributeInfo> selfAttributes() {
     if (mSelfAttributes == null) {
       TreeMap<FieldInfo, AttributeInfo> attrs = new TreeMap<FieldInfo, AttributeInfo>();
 
@@ -599,13 +620,13 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
         }
       }
 
-      mSelfAttributes = attrs.values().toArray(new AttributeInfo[attrs.size()]);
-      Arrays.sort(mSelfAttributes, AttributeInfo.comparator);
+      mSelfAttributes = new ArrayList<AttributeInfo>(attrs.values());
+      Collections.sort(mSelfAttributes, AttributeInfo.comparator);
     }
     return mSelfAttributes;
   }
 
-  public FieldInfo[] enumConstants() {
+  public ArrayList<FieldInfo> enumConstants() {
     return mEnumConstants;
   }
 
@@ -642,14 +663,12 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return mTypeInfo;
   }
 
-  TypeInfo[] interfaceTypes() {
-    ClassInfo[] infos = interfaces();
-    int len = infos.length;
-    TypeInfo[] types = new TypeInfo[len];
-    for (int i = 0; i < len; i++) {
-      types[i] = infos[i].asTypeInfo();
-    }
-    return types;
+  ArrayList<TypeInfo> interfaceTypes() {
+      ArrayList<TypeInfo> types = new ArrayList<TypeInfo>();
+      for (ClassInfo iface : interfaces()) {
+          types.add(iface.asTypeInfo());
+      }
+      return types;
   }
 
   public String htmlPage() {
@@ -701,10 +720,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
     keywords.add(new KeywordEntry(name(), htmlPage, "class in " + containingPackage().name()));
 
-    FieldInfo[] fields = selfFields();
-    FieldInfo[] enumConstants = enumConstants();
-    MethodInfo[] ctors = constructors();
-    MethodInfo[] methods = selfMethods();
+    ArrayList<FieldInfo> fields = selfFields();
+    //ArrayList<FieldInfo> enumConstants = enumConstants();
+    ArrayList<MethodInfo> ctors = constructors();
+    ArrayList<MethodInfo> methods = selfMethods();
 
     // enum constants
     for (FieldInfo field : enumConstants()) {
@@ -843,19 +862,18 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     int i, j, n;
     String name = name();
     String qualified = qualifiedName();
-    AttributeInfo[] selfAttributes = selfAttributes();
-    MethodInfo[] methods = selfMethods();
-    FieldInfo[] fields = selfFields();
-    FieldInfo[] enumConstants = enumConstants();
-    MethodInfo[] ctors = constructors();
-    ClassInfo[] inners = innerClasses();
+    ArrayList<AttributeInfo> selfAttributes = selfAttributes();
+    ArrayList<MethodInfo> methods = selfMethods();
+    ArrayList<FieldInfo> fields = selfFields();
+    ArrayList<FieldInfo> enumConstants = enumConstants();
+    ArrayList<MethodInfo> ctors = constructors();
+    ArrayList<ClassInfo> inners = innerClasses();
 
     // class name
     mTypeInfo.makeHDF(data, "class.type");
     mTypeInfo.makeQualifiedHDF(data, "class.qualifiedType");
     data.setValue("class.name", name);
     data.setValue("class.qualified", qualified);
-    String scope = "";
     if (isProtected()) {
       data.setValue("class.scope", "protected");
     } else if (isPublic()) {
@@ -1088,7 +1106,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
   }
 
-  private static void addInterfaces(ClassInfo[] ifaces, Set<ClassInfo> out) {
+  private static void addInterfaces(ArrayList<ClassInfo> ifaces, Set<ClassInfo> out) {
     for (ClassInfo cl : ifaces) {
       out.add(cl);
       addInterfaces(cl.interfaces(), out);
@@ -1179,11 +1197,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return false;
   }
 
-  private MethodInfo matchMethod(MethodInfo[] methods, String name, String[] params,
+  private MethodInfo matchMethod(ArrayList<MethodInfo> methods, String name, String[] params,
       String[] dimensions, boolean varargs) {
-    int len = methods.length;
-    for (int i = 0; i < len; i++) {
-      MethodInfo method = methods[i];
+    for (MethodInfo method : methods) {
       if (method.name().equals(name)) {
         if (params == null) {
           return method;
@@ -1235,7 +1251,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private ClassInfo searchInnerClasses(String[] nameParts, int index) {
     String part = nameParts[index];
 
-    ClassInfo[] inners = mInnerClasses;
+    ArrayList<ClassInfo> inners = mInnerClasses;
     for (ClassInfo in : inners) {
       String[] innerParts = in.nameParts();
       if (part.equals(innerParts[innerParts.length - 1])) {
@@ -1327,11 +1343,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
   }
 
-  public void setNonWrittenConstructors(MethodInfo[] nonWritten) {
+  public void setNonWrittenConstructors(ArrayList<MethodInfo> nonWritten) {
     mNonWrittenConstructors = nonWritten;
   }
 
-  public MethodInfo[] getNonWrittenConstructors() {
+  public ArrayList<MethodInfo> getNonWrittenConstructors() {
     return mNonWrittenConstructors;
   }
 
@@ -1366,11 +1382,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
   }
 
-  public void setHiddenMethods(MethodInfo[] mInfo) {
+  public void setHiddenMethods(ArrayList<MethodInfo> mInfo) {
     mHiddenMethods = mInfo;
   }
 
-  public MethodInfo[] getHiddenMethods() {
+  public ArrayList<MethodInfo> getHiddenMethods() {
     return mHiddenMethods;
   }
 
@@ -1412,38 +1428,38 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private String[] mNameParts;
 
   // init
-  private List<ClassInfo> mRealInterfaces = new ArrayList<ClassInfo>();
-  private ClassInfo[] mInterfaces;
-  private TypeInfo[] mRealInterfaceTypes;
-  private ClassInfo[] mInnerClasses;
-  private MethodInfo[] mAllConstructors = new MethodInfo[0];
-  private MethodInfo[] mAllSelfMethods = new MethodInfo[0];
-  private MethodInfo[] mAnnotationElements; // if this class is an annotation
-  private FieldInfo[] mAllSelfFields = new FieldInfo[0];
-  private FieldInfo[] mEnumConstants = new FieldInfo[0];
+  private ArrayList<ClassInfo> mRealInterfaces = new ArrayList<ClassInfo>();
+  private ArrayList<ClassInfo> mInterfaces;
+  private ArrayList<TypeInfo> mRealInterfaceTypes;
+  private ArrayList<ClassInfo> mInnerClasses;
+  private ArrayList<MethodInfo> mAllConstructors = new ArrayList<MethodInfo>();
+  private ArrayList<MethodInfo> mAllSelfMethods = new ArrayList<MethodInfo>();
+  private ArrayList<MethodInfo> mAnnotationElements = new ArrayList<MethodInfo>(); // if this class is an annotation
+  private ArrayList<FieldInfo> mAllSelfFields = new ArrayList<FieldInfo>();
+  private ArrayList<FieldInfo> mEnumConstants = new ArrayList<FieldInfo>();
   private PackageInfo mContainingPackage;
   private ClassInfo mContainingClass;
   private ClassInfo mRealSuperclass;
   private TypeInfo mRealSuperclassType;
   private ClassInfo mSuperclass;
-  private AnnotationInstanceInfo[] mAnnotations;
+  private ArrayList<AnnotationInstanceInfo> mAnnotations;
   private boolean mSuperclassInit;
   private boolean mDeprecatedKnown;
 
   // lazy
-  private MethodInfo[] mConstructors;
-  private ClassInfo[] mRealInnerClasses;
-  private MethodInfo[] mSelfMethods;
-  private FieldInfo[] mSelfFields;
-  private AttributeInfo[] mSelfAttributes;
-  private MethodInfo[] mMethods;
-  private FieldInfo[] mFields;
-  private TypeInfo[] mTypeParameters;
-  private MethodInfo[] mHiddenMethods;
+  private ArrayList<MethodInfo> mConstructors;
+  private ArrayList<ClassInfo> mRealInnerClasses;
+  private ArrayList<MethodInfo> mSelfMethods;
+  private ArrayList<FieldInfo> mSelfFields;
+  private ArrayList<AttributeInfo> mSelfAttributes;
+  private ArrayList<MethodInfo> mMethods;
+  private ArrayList<FieldInfo> mFields;
+  private ArrayList<TypeInfo> mTypeParameters;
+  private ArrayList<MethodInfo> mHiddenMethods;
   private int mHidden = -1;
   private int mCheckLevel = -1;
   private String mReasonIncluded;
-  private MethodInfo[] mNonWrittenConstructors;
+  private ArrayList<MethodInfo> mNonWrittenConstructors;
   private boolean mIsDeprecated;
   
   // TODO: Temporary members from apicheck migration.
@@ -1478,30 +1494,22 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   public void addConstructor(MethodInfo ctor) {
     mApiCheckConstructors.put(ctor.getHashableName(), ctor);
 
-    MethodInfo[] old = mAllConstructors;
-    mAllConstructors = new MethodInfo[old.length+1];
-    System.arraycopy(old, 0, mAllConstructors, 0, old.length);
-    mAllConstructors[mAllConstructors.length-1] = ctor;
+    mAllConstructors.add(ctor);
     mConstructors = null; // flush this, hopefully it hasn't been used yet.
   }
 
   public void addField(FieldInfo field) {
     mApiCheckFields.put(field.name(), field);
 
-    FieldInfo[] old = mAllSelfFields;
-    mAllSelfFields = new FieldInfo[old.length+1];
-    System.arraycopy(old, 0, mAllSelfFields, 0, old.length);
-    mAllSelfFields[mAllSelfFields.length-1] = field;
+    mAllSelfFields.add(field);
+
     mSelfFields = null; // flush this, hopefully it hasn't been used yet.
   }
 
   public void addEnumConstant(FieldInfo field) {
     mApiCheckEnumConstants.put(field.name(), field);
 
-    FieldInfo[] old = mEnumConstants;
-    mEnumConstants = new FieldInfo[old.length+1];
-    System.arraycopy(old, 0, mEnumConstants, 0, old.length);
-    mEnumConstants[mEnumConstants.length-1] = field;
+    mEnumConstants.add(field);
   }
 
   public void setSuperClass(ClassInfo superclass) {
@@ -1547,7 +1555,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return mSuperclass.mQualifiedName;
   }
   
-  public void setAnnotations(AnnotationInstanceInfo[] annotations) {
+  public void setAnnotations(ArrayList<AnnotationInstanceInfo> annotations) {
     mAnnotations = annotations;
   }
   
@@ -1751,8 +1759,34 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
     return false;
   }
-  
+
   public void setTypeInfo(TypeInfo typeInfo) {
     mTypeInfo = typeInfo;
+  }
+
+  public TypeInfo type() {
+      return mTypeInfo;
+  }
+
+  public void addInnerClass(ClassInfo innerClass) {
+      if (mInnerClasses == null) {
+          mInnerClasses = new ArrayList<ClassInfo>();
+      }
+
+      mInnerClasses.add(innerClass);
+  }
+
+  public void setContainingClass(ClassInfo containingClass) {
+      mContainingClass = containingClass;
+  }
+
+  public void setSuperclassType(TypeInfo superclassType) {
+      mRealSuperclassType = superclassType;
+  }
+
+  public void printResolutions() {
+      System.out.println("Resolutions for Class " + mName + ":");
+
+      super.printResolutions();
   }
 }

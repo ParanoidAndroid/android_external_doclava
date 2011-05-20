@@ -19,6 +19,7 @@ package com.google.doclava;
 import com.google.doclava.apicheck.ApiParseException;
 import com.google.clearsilver.jsilver.data.Data;
 import java.util.Comparator;
+import java.util.ArrayList;
 
 public class FieldInfo extends MemberInfo {
   public static final Comparator<FieldInfo> comparator = new Comparator<FieldInfo>() {
@@ -31,7 +32,7 @@ public class FieldInfo extends MemberInfo {
       boolean isPublic, boolean isProtected, boolean isPackagePrivate, boolean isPrivate,
       boolean isFinal, boolean isStatic, boolean isTransient, boolean isVolatile,
       boolean isSynthetic, TypeInfo type, String rawCommentText, Object constantValue,
-      SourcePositionInfo position, AnnotationInstanceInfo[] annotations) {
+      SourcePositionInfo position, ArrayList<AnnotationInstanceInfo> annotations) {
     super(rawCommentText, name, null, containingClass, realContainingClass, isPublic, isProtected,
           isPackagePrivate, isPrivate, isFinal, isStatic, isSynthetic, chooseKind(isFinal, isStatic, constantValue),
         position, annotations);
@@ -461,10 +462,19 @@ public class FieldInfo extends MemberInfo {
     return consistent;
   }
 
+  public boolean hasValue() {
+      return mHasValue;
+  }
+
+  public void setHasValue(boolean hasValue) {
+      mHasValue = hasValue;
+  }
+
   boolean mIsTransient;
   boolean mIsVolatile;
   boolean mDeprecatedKnown;
   boolean mIsDeprecated;
+  boolean mHasValue;
   TypeInfo mType;
   Object mConstantValue;
 }

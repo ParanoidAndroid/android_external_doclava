@@ -16,12 +16,14 @@
 
 package com.google.doclava;
 
+import java.util.ArrayList;
+
 public abstract class MemberInfo extends DocInfo implements Comparable, Scoped {
   public MemberInfo(String rawCommentText, String name, String signature,
       ClassInfo containingClass, ClassInfo realContainingClass, boolean isPublic,
       boolean isProtected, boolean isPackagePrivate, boolean isPrivate, boolean isFinal,
       boolean isStatic, boolean isSynthetic, String kind, SourcePositionInfo position,
-      AnnotationInstanceInfo[] annotations) {
+      ArrayList<AnnotationInstanceInfo> annotations) {
     super(rawCommentText, position);
     mName = name;
     mSignature = signature;
@@ -127,7 +129,7 @@ public abstract class MemberInfo extends DocInfo implements Comparable, Scoped {
     return mKind;
   }
 
-  public AnnotationInstanceInfo[] annotations() {
+  public ArrayList<AnnotationInstanceInfo> annotations() {
     return mAnnotations;
   }
 
@@ -143,6 +145,6 @@ public abstract class MemberInfo extends DocInfo implements Comparable, Scoped {
   boolean mIsStatic;
   boolean mIsSynthetic;
   String mKind;
-  private AnnotationInstanceInfo[] mAnnotations;
+  private ArrayList<AnnotationInstanceInfo> mAnnotations;
 
 }
