@@ -209,9 +209,12 @@ class ApiFile {
         parseMethod(tokenizer, cl, token);
       } else if ("field".equals(token)) {
         token = tokenizer.requireToken();
-        parseField(tokenizer, cl, token);
+        parseField(tokenizer, cl, token, false);
+      } else if ("enum_constant".equals(token)) {
+        token = tokenizer.requireToken();
+        parseField(tokenizer, cl, token, true);
       } else {
-        throw new ApiParseException("expected ctor, field or method", tokenizer.getLine());
+        throw new ApiParseException("expected ctor, enum_constant, field or method", tokenizer.getLine());
       }
       token = tokenizer.requireToken();
     }
@@ -342,7 +345,7 @@ class ApiFile {
     cl.addMethod(method);
   }
 
-  private static void parseField(Tokenizer tokenizer, ClassInfo cl, String token)
+  private static void parseField(Tokenizer tokenizer, ClassInfo cl, String token, boolean isEnum)
       throws ApiParseException {
     boolean pub = false;
     boolean prot = false;
@@ -411,7 +414,11 @@ class ApiFile {
         trans, vol, false, Converter.obtainTypeFromString(type), "", v, tokenizer.pos(),
         new AnnotationInstanceInfo[0]);
     field.setDeprecated(dep);
-    cl.addField(field);
+    if (isEnum) {
+      cl.addEnumConstant(field);
+    } else {
+      cl.addField(field);
+    }
   }
 
   public static Object parseValue(String type, String val) throws ApiParseException {

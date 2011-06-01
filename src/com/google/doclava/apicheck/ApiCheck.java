@@ -133,7 +133,7 @@ public class ApiCheck {
       return ApiFile.parseApi(filename, stream);
     } catch (ApiParseException ignored) {
       if (false) {
-        System.out.println("stopping");
+        System.out.println("stopping for file: " + filename);
         ignored.printStackTrace();
         return null;
       }

@@ -1059,10 +1059,16 @@ public class Stubs {
       }
     }
 
+    FieldInfo[] enums = cl.enumConstants();
+    Arrays.sort(enums, FieldInfo.comparator);
+    for (FieldInfo fi : enums) {
+      writeFieldApi(apiWriter, fi, "enum_constant");
+    }
+
     FieldInfo[] fields = cl.allSelfFields();
     Arrays.sort(fields, FieldInfo.comparator);
     for (FieldInfo fi : fields) {
-      writeFieldApi(apiWriter, fi);
+      writeFieldApi(apiWriter, fi, "field");
     }
 
     apiWriter.print("  }\n\n");
@@ -1157,8 +1163,10 @@ public class Stubs {
     }
   }
 
-  static void writeFieldApi(PrintStream apiWriter, FieldInfo fi) {
-    apiWriter.print("    field ");
+  static void writeFieldApi(PrintStream apiWriter, FieldInfo fi, String label) {
+    apiWriter.print("    ");
+    apiWriter.print(label);
+    apiWriter.print(" ");
     apiWriter.print(fi.scope());
     if (fi.isStatic()) {
       apiWriter.print(" static");

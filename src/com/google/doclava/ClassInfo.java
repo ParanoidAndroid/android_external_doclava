@@ -1420,7 +1420,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private MethodInfo[] mAllSelfMethods = new MethodInfo[0];
   private MethodInfo[] mAnnotationElements; // if this class is an annotation
   private FieldInfo[] mAllSelfFields = new FieldInfo[0];
-  private FieldInfo[] mEnumConstants;
+  private FieldInfo[] mEnumConstants = new FieldInfo[0];
   private PackageInfo mContainingPackage;
   private ClassInfo mContainingClass;
   private ClassInfo mRealSuperclass;
@@ -1450,6 +1450,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private HashMap<String, MethodInfo> mApiCheckConstructors = new HashMap<String, MethodInfo>();
   private HashMap<String, MethodInfo> mApiCheckMethods = new HashMap<String, MethodInfo>();
   private HashMap<String, FieldInfo> mApiCheckFields = new HashMap<String, FieldInfo>();
+  private HashMap<String, FieldInfo> mApiCheckEnumConstants = new HashMap<String, FieldInfo>();
   
   /**
    * Returns true if {@code cl} implements the interface {@code iface} either by either being that
@@ -1492,6 +1493,15 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     System.arraycopy(old, 0, mAllSelfFields, 0, old.length);
     mAllSelfFields[mAllSelfFields.length-1] = field;
     mSelfFields = null; // flush this, hopefully it hasn't been used yet.
+  }
+
+  public void addEnumConstant(FieldInfo field) {
+    mApiCheckEnumConstants.put(field.name(), field);
+
+    FieldInfo[] old = mEnumConstants;
+    mEnumConstants = new FieldInfo[old.length+1];
+    System.arraycopy(old, 0, mEnumConstants, 0, old.length);
+    mEnumConstants[mEnumConstants.length-1] = field;
   }
 
   public void setSuperClass(ClassInfo superclass) {
@@ -1633,6 +1643,25 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       if (!mApiCheckFields.containsKey(mInfo.name())) {
         Errors.error(Errors.ADDED_FIELD, mInfo.position(), "Added public field "
             + mInfo.qualifiedName());
+        consistent = false;
+      }
+    }
+
+    for (FieldInfo info : mApiCheckEnumConstants.values()) {
+      if (cl.mApiCheckEnumConstants.containsKey(info.name())) {
+        if (!info.isConsistent(cl.mApiCheckEnumConstants.get(info.name()))) {
+          consistent = false;
+        }
+      } else {
+        Errors.error(Errors.REMOVED_FIELD, info.position(), "Removed enum constant "
+            + info.qualifiedName());
+        consistent = false;
+      }
+    }
+    for (FieldInfo info : cl.mApiCheckEnumConstants.values()) {
+      if (!mApiCheckEnumConstants.containsKey(info.name())) {
+        Errors.error(Errors.ADDED_FIELD, info.position(), "Added enum constant "
+            + info.qualifiedName());
         consistent = false;
       }
     }
