@@ -779,7 +779,7 @@ public class Doclava {
     }
     PrintStream stream = null;
     try {
-      stream = new PrintStream(filename);
+      stream = new PrintStream(new BufferedOutputStream(new FileOutputStream(filename)));
       for (ClassInfo cl : notStrippable) {
         stream.println(getPrintableName(cl));
       }
