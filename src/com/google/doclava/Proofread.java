@@ -16,20 +16,22 @@
 
 package com.google.doclava;
 
-import java.io.IOException;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Proofread {
-  static FileWriter out = null;
+  static Writer out = null;
   static final Pattern WHITESPACE = Pattern.compile("\\r?\\n");
   static final String INDENT = "        ";
   static final String NEWLINE = "\n" + INDENT;
 
   public static void initProofread(String filename) {
     try {
-      out = new FileWriter(filename);
+      out = new BufferedWriter(new FileWriter(filename));
       out.write("javadoc proofread file: " + filename + "\n");
     } catch (IOException e) {
       if (out != null) {

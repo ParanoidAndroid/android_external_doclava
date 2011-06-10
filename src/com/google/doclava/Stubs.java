@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 
 public class Stubs {
@@ -38,7 +40,7 @@ public class Stubs {
       try {
         File xml = new File(apiFile);
         xml.getParentFile().mkdirs();
-        apiWriter = new PrintStream(xml);
+        apiWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(xml)));
       } catch (FileNotFoundException e) {
         Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
             "Cannot open file for write.");
@@ -305,7 +307,7 @@ public class Stubs {
 
     PrintStream stream = null;
     try {
-      stream = new PrintStream(file);
+      stream = new PrintStream(new BufferedOutputStream(new FileOutputStream(file)));
       writeClassFile(stream, notStrippable, cl);
     } catch (FileNotFoundException e) {
       System.err.println("error writing file: " + filename);
