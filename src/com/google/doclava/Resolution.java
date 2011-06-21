@@ -36,16 +36,19 @@ package com.google.doclava;
 public class Resolution {
     private String mVariable;
     private String mValue;
+    private InfoBuilder mBuilder;
 
     /**
      * Creates a new resolution with variable and value.
      * @param variable The piece of data within a Java type that needs to be updated
      * that we could not resolve.
      * @param value The value to which the variable contained within this {@link Resolution} refers.
+     * @param builder The InfoBuilder that is building the file in which the Resolution exists.
      */
-    public Resolution(String variable, String value) {
+    public Resolution(String variable, String value, InfoBuilder builder) {
         mVariable = variable;
         mValue = value;
+        mBuilder = builder;
     }
 
     /**
@@ -61,6 +64,13 @@ public class Resolution {
      */
     public String getValue() {
         return mValue;
+    }
+
+    /**
+     * @return The InfoBuilder that built the file in which the Resolution exists.
+     */
+    public InfoBuilder getInfoBuilder() {
+        return mBuilder;
     }
 
     @Override

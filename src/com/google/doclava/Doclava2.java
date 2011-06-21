@@ -16,42 +16,71 @@
 
 package com.google.doclava;
 
-import com.google.doclava.parser.JavaLexer;
-import com.google.doclava.parser.JavaParser;
-
-import org.antlr.runtime.ANTLRFileStream;
-import org.antlr.runtime.CommonToken;
-import org.antlr.runtime.CommonTokenStream;
-import org.antlr.runtime.RecognitionException;
-import org.antlr.runtime.debug.ParseTreeBuilder;
-import org.antlr.runtime.tree.ParseTree;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
 
 public class Doclava2 {
+    private static final boolean DEBUG_MODE = false;
     public static void main(String args[]) throws Exception {
-        InfoBuilder infoBuilder = new InfoBuilder();
+        if (DEBUG_MODE) {
+            ArrayList<String> files = new ArrayList<String>();
+            files.add("frameworks/base/core/java/android/preference/VolumePreference.java");
+            files.add("frameworks/base/core/java/android/preference/SeekBarDialogPreference.java");
+//            files.add("frameworks/base/core/java/android/view/ViewGroup.java");
+//            files.add("frameworks/base/core/java/android/widget/FrameLayout.java");
+//            files.add("frameworks/base/core/java/android/widget/DatePicker.java");
+//            files.add("frameworks/base/core/java/android/widget/GridLayout.java");
 
-        JavaLexer lex = new JavaLexer(new ANTLRFileStream(args[0], "UTF8"));
-        CommonTokenStream tokens = new CommonTokenStream(lex);
+            for (String filename : files) {
+                InfoBuilder infoBuilder = new InfoBuilder(filename);
+                System.out.println(filename);
+                infoBuilder.parseFile();
+            }
 
-        // create the ParseTreeBuilder to build a parse tree
-        // much easier to parse than ASTs
-        ParseTreeBuilder builder = new ParseTreeBuilder("compilationUnit");
-        JavaParser g = new JavaParser(tokens, builder);
+            ClassInfo cl = InfoBuilder.Caches.getClass("android.preference.VolumePreference");
+            if (cl != null) {
+                InfoBuilder.printClassInfo(cl);
 
-        try {
-             g.compilationUnit();
-        } catch (RecognitionException e) {
-            e.printStackTrace();
+                InfoBuilder.resolve();
+                cl.printResolutions();
+            } else {
+                System.out.println("You're looking for a class that does not exist.");
+            }
+        } else {
+            BufferedReader buf = new BufferedReader(new FileReader(args[0]));
+
+            String line = buf.readLine();
+
+            ArrayList<String> files = new ArrayList<String>();
+            while (line != null) {
+                String[] names = line.split(" ");
+
+                for (String name : names) {
+                    files.add(name);
+                }
+
+                line = buf.readLine();
+            }
+
+            for (String filename : files) {
+                InfoBuilder infoBuilder = new InfoBuilder(filename);
+                System.out.println(filename);
+                infoBuilder.parseFile();
+            }
+
+            InfoBuilder.resolve();
+
+
+            System.out.println("\n\n\n\n\n\n\n");
+            System.out.println("************************************************");
+
+            InfoBuilder.Caches.printResolutions();
+
+            System.out.println("************************************************");
+
+            InfoBuilder.resolve();
+            InfoBuilder.Caches.printResolutions();
         }
-
-        ParseTree tree = builder.getTree();
-        lex = null;
-        tokens = null;
-        builder = null;
-        g = null;
-
-        infoBuilder.parseFile(tree);
-
-        infoBuilder.printStuff();
     }
 }

@@ -32,7 +32,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Vector;
 
-public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Scoped {
+public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Scoped, Resolvable {
   public static final Comparator<ClassInfo> comparator = new Comparator<ClassInfo>() {
     public int compare(ClassInfo a, ClassInfo b) {
       return a.name().compareTo(b.name());
@@ -1467,6 +1467,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private HashMap<String, MethodInfo> mApiCheckMethods = new HashMap<String, MethodInfo>();
   private HashMap<String, FieldInfo> mApiCheckFields = new HashMap<String, FieldInfo>();
   private HashMap<String, FieldInfo> mApiCheckEnumConstants = new HashMap<String, FieldInfo>();
+
+  // Resolutions
+  private ArrayList<Resolution> mResolutions;
   
   /**
    * Returns true if {@code cl} implements the interface {@code iface} either by either being that
@@ -1785,8 +1788,46 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   }
 
   public void printResolutions() {
+      if (mResolutions == null || mResolutions.isEmpty()) {
+          return;
+      }
+
       System.out.println("Resolutions for Class " + mName + ":");
 
-      super.printResolutions();
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
+  }
+
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new ArrayList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public boolean resolveResolutions() {
+      ArrayList<Resolution> resolutions = mResolutions;
+      mResolutions = new ArrayList<Resolution>();
+
+      boolean allResolved = true;
+      for (Resolution resolution : resolutions) {
+          StringBuilder qualifiedClassName = new StringBuilder();
+          InfoBuilder.resolveQualifiedName(resolution.getValue(), qualifiedClassName,
+                  resolution.getInfoBuilder());
+
+          // if we still couldn't resolve it, save it for the next pass
+          if ("".equals(qualifiedClassName.toString())) {
+              mResolutions.add(resolution);
+              allResolved = false;
+          } else if ("superclassQualifiedName".equals(resolution.getVariable())) {
+              setSuperClass(InfoBuilder.Caches.obtainClass(qualifiedClassName.toString()));
+          } else if ("interfaceQualifiedName".equals(resolution.getVariable())) {
+              addInterface(InfoBuilder.Caches.obtainClass(qualifiedClassName.toString()));
+          }
+      }
+
+      return allResolved;
   }
 }

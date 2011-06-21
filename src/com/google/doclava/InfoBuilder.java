@@ -16,15 +16,22 @@
 
 package com.google.doclava;
 
+import com.google.doclava.parser.JavaLexer;
+import com.google.doclava.parser.JavaParser;
+
 import org.antlr.runtime.ANTLRFileStream;
 import org.antlr.runtime.CommonToken;
+import org.antlr.runtime.CommonTokenStream;
+import org.antlr.runtime.RecognitionException;
+import org.antlr.runtime.debug.ParseTreeBuilder;
 import org.antlr.runtime.tree.ParseTree;
 import org.antlr.runtime.tree.Tree;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.ArrayList;
 
 /**
  * InfoBuilder parses an individual file and builds Doclava
@@ -32,19 +39,57 @@ import java.util.ArrayList;
  * stored within a global cache for later use.
  */
 public class InfoBuilder {
-    // TODO - remove the unnecessary stuff here
     private PackageInfo mPackage;
     private ArrayList<String> mImports;
-    private ArrayList<ClassInfo> mClasses;
     private HashSet<String> mClassNames;
+    private String mFilename; // TODO - remove this eventually
+    private ClassInfo mRootClass;
 
-    public InfoBuilder() {
+    public InfoBuilder(String filename) {
         mImports = new ArrayList<String>();
         mImports.add("java.lang.*"); // should allow us to resolve this properly, eventually
                                      // alternatively, we could add everything from java.lang.*
                                      // but that would probably be too brittle
-        mClasses = new ArrayList<ClassInfo>();
         mClassNames = new HashSet<String>();
+        mFilename = filename;
+    }
+
+    @Override
+    public String toString() {
+        return mFilename;
+    }
+
+    public void parseFile() {
+        JavaLexer lex;
+        try {
+            lex = new JavaLexer(new ANTLRFileStream(mFilename, "UTF8"));
+
+            CommonTokenStream tokens = new CommonTokenStream(lex);
+
+            // create the ParseTreeBuilder to build a parse tree
+            // much easier to parse than ASTs
+            ParseTreeBuilder builder = new ParseTreeBuilder("compilationUnit");
+            JavaParser g = new JavaParser(tokens, builder);
+
+            g.compilationUnit();
+            ParseTree tree = builder.getTree();
+
+            lex = null;
+            tokens = null;
+            builder = null;
+            g = null;
+
+            parseFile(tree);
+
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } catch (RecognitionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void resolve() {
+        Caches.resolve();
     }
 
     // All of the print functions exist for debugging alone.
@@ -52,8 +97,6 @@ public class InfoBuilder {
         System.out.println(mPackage.name() + "\n");
 
         printList(mImports);
-
-        printClassInfoList(mClasses);
 
         Caches.printResolutions();
     }
@@ -66,175 +109,180 @@ public class InfoBuilder {
         System.out.println();
     }
 
-    private void printClassInfoList(ArrayList<ClassInfo> list) {
-        for (ClassInfo value : list) {
-            System.out.print("Class: " + value.toString());
+    public static void printClassInfo(ClassInfo cl) {
+        System.out.print("Class: " + cl.toString());
 
-            printTypeVariables(value.type());
+        printTypeVariables(cl.type());
+
+        System.out.println();
+
+        System.out.println(cl.comment().mText);
+
+        if (!cl.annotations().isEmpty()) {
+            System.out.println("\nAnnotations:");
+            printAnnotations(cl.annotations());
+        }
+
+        if (cl.superclass() != null) {
+            System.out.print("Superclass: " + cl.superclass().qualifiedName());
+            printTypeVariables(cl.superclassType());
+            System.out.println();
+        }
+
+        if (!cl.realInterfaces().isEmpty()) {
+            System.out.println("\nInterfaces Implemented:");
+            Iterator<TypeInfo> it = cl.realInterfaceTypes().iterator();
+            for (ClassInfo cls : cl.realInterfaces()) {
+                TypeInfo outerType = it.next();
+                if (cls == null) {
+                    System.out.print(outerType.simpleTypeName());
+                } else {
+                    System.out.print(cls.qualifiedName());
+                }
+
+                printTypeVariables(outerType);
+
+                System.out.println();
+            }
 
             System.out.println();
+        }
 
-            System.out.println(value.comment().mText);
+        if (!cl.allSelfFields().isEmpty()) {
+            System.out.println("\nFields:");
+            for (FieldInfo f : cl.allSelfFields()) {
+                if (f != cl.allSelfFields().get(0)) {
+                    System.out.println();
+                }
+                System.out.println(f.comment().mText);
 
-            if (!value.annotations().isEmpty()) {
-                System.out.println("\nAnnotations:");
-                printAnnotations(value.annotations());
+                printAnnotations(f.annotations());
+                printTypeName(f.type());
+
+                System.out.print(" " + f.name());
+
+                if (f.constantValue() != null) {
+                    System.out.println(": " + f.constantValue());
+                } else if (f.hasValue()) {
+                    System.out.println(": has some value");
+                } else {
+                    System.out.println();
+                }
             }
 
-            if (value.superclass() != null) {
-                System.out.print("Superclass: " + value.superclass().qualifiedName());
-                printTypeVariables(value.superclassType());
-                System.out.println();
+            System.out.println();
+        }
+
+        if (cl.enumConstants() != null && !cl.enumConstants().isEmpty()) {
+            System.out.println("\nEnum Constants:");
+            for (FieldInfo f : cl.enumConstants()) {
+                if (f != cl.enumConstants().get(0)) {
+                    System.out.println();
+                }
+                System.out.println(f.comment().mText);
+                printAnnotations(f.annotations());
+                System.out.print(f.type().simpleTypeName() + " " + f.name());
+
+                if (f.constantValue() != null) {
+                    System.out.println(": " + f.constantValue());
+                } else {
+                    System.out.println();
+                }
             }
 
-            if (!value.realInterfaces().isEmpty()) {
-                System.out.println("\nInterfaces Implemented:");
-                Iterator<TypeInfo> it = value.realInterfaceTypes().iterator();
-                for (ClassInfo cls : value.realInterfaces()) {
-                    TypeInfo outerType = it.next();
-                    if (cls == null) {
-                        System.out.print(outerType.simpleTypeName());
-                    } else {
-                        System.out.print(cls.qualifiedName());
-                    }
+            System.out.println();
+        }
 
-                    printTypeVariables(outerType);
-
+        if (!cl.allConstructors().isEmpty()) {
+            System.out.println("\nConstructors:");
+            for (MethodInfo m : cl.allConstructors()) {
+                if (m != cl.allConstructors().get(0)) {
                     System.out.println();
                 }
 
-                System.out.println();
-            }
+                System.out.println(m.comment().mText);
 
-            if (!value.allSelfFields().isEmpty()) {
-                System.out.println("\nFields:");
-                for (FieldInfo f : value.allSelfFields()) {
-                    if (f != value.allSelfFields().get(0)) {
-                        System.out.println();
-                    }
-                    System.out.println(f.comment().mText);
-
-                    printAnnotations(f.annotations());
-                    printTypeName(f.type());
-
-                    System.out.print(" " + f.name());
-
-                    if (f.constantValue() != null) {
-                        System.out.println(": " + f.constantValue());
-                    } else if (f.hasValue()) {
-                        System.out.println(": has some value");
-                    } else {
-                        System.out.println();
-                    }
+                printAnnotations(m.annotations());
+                if (m.getTypeParameters() != null) {
+                    printTypeVariableList(m.getTypeParameters());
+                    System.out.print(" ");
                 }
 
-                System.out.println();
+                System.out.println(m.name() + m.flatSignature());
             }
 
-            if (value.enumConstants() != null && !value.enumConstants().isEmpty()) {
-                System.out.println("\nEnum Constants:");
-                for (FieldInfo f : value.enumConstants()) {
-                    if (f != value.enumConstants().get(0)) {
-                        System.out.println();
-                    }
-                    System.out.println(f.comment().mText);
-                    printAnnotations(f.annotations());
-                    System.out.print(f.type().simpleTypeName() + " " + f.name());
+            System.out.println();
+        }
 
-                    if (f.constantValue() != null) {
-                        System.out.println(": " + f.constantValue());
-                    } else {
-                        System.out.println();
-                    }
+        if (!cl.allSelfMethods().isEmpty()) {
+            System.out.println("\nMethods:");
+            for (MethodInfo m : cl.allSelfMethods()) {
+                if (m != cl.allSelfMethods().get(0)) {
+                    System.out.println();
                 }
 
-                System.out.println();
-            }
-
-            if (!value.allConstructors().isEmpty()) {
-                System.out.println("\nConstructors:");
-                for (MethodInfo m : value.allConstructors()) {
-                    if (m != value.allConstructors().get(0)) {
-                        System.out.println();
-                    }
-
-                    System.out.println(m.comment().mText);
-
-                    printAnnotations(m.annotations());
-                    if (m.getTypeParameters() != null) {
-                        printTypeVariableList(m.getTypeParameters());
-                        System.out.print(" ");
-                    }
-
-                    System.out.println(m.name() + m.flatSignature());
+                System.out.println(m.comment().mText);
+                printAnnotations(m.annotations());
+                if (m.getTypeParameters() != null) {
+                    printTypeVariableList(m.getTypeParameters());
+                    System.out.print(" ");
                 }
 
-                System.out.println();
-            }
+                printTypeName(m.returnType());
 
-            if (!value.allSelfMethods().isEmpty()) {
-                System.out.println("\nMethods:");
-                for (MethodInfo m : value.allSelfMethods()) {
-                    if (m != value.allSelfMethods().get(0)) {
-                        System.out.println();
-                    }
+                System.out.print(" " + m.name() + m.flatSignature());
 
-                    System.out.println(m.comment().mText);
-                    printAnnotations(m.annotations());
-                    if (m.getTypeParameters() != null) {
-                        printTypeVariableList(m.getTypeParameters());
-                        System.out.print(" ");
-                    }
-
-                    printTypeName(m.returnType());
-
-                    System.out.print(" " + m.name() + m.flatSignature());
-
-                    if (m.thrownExceptions() != null && !m.thrownExceptions().isEmpty()) {
-                        System.out.print(" throws ");
-                        for (ClassInfo c : m.thrownExceptions()) {
-                            if (c != m.thrownExceptions().get(0)) {
-                                System.out.print(", ");
-                            }
-
-                            System.out.print(c.name());
+                if (m.thrownExceptions() != null && !m.thrownExceptions().isEmpty()) {
+                    System.out.print(" throws ");
+                    for (ClassInfo c : m.thrownExceptions()) {
+                        if (c != m.thrownExceptions().get(0)) {
+                            System.out.print(", ");
                         }
-                    }
 
-                    System.out.println();
+                        System.out.print(c.name());
+                    }
                 }
 
                 System.out.println();
             }
 
-            if (!value.annotationElements().isEmpty()) {
-                System.out.println("\nAnnotation Elements:");
+            System.out.println();
+        }
 
-                for (MethodInfo m : value.annotationElements()) {
-                    if (m != value.annotationElements().get(0)) {
-                        System.out.println();
-                    }
+        if (!cl.annotationElements().isEmpty()) {
+            System.out.println("\nAnnotation Elements:");
 
-                    System.out.println(m.comment().mText);
-                    printAnnotations(m.annotations());
-                    printTypeName(m.returnType());
-
-                    System.out.print(" " + m.name() + m.flatSignature());
-
-                    if (m.defaultAnnotationElementValue() != null) {
-                        System.out.print(" default " +
-                                m.defaultAnnotationElementValue().valueString());
-                    }
-
+            for (MethodInfo m : cl.annotationElements()) {
+                if (m != cl.annotationElements().get(0)) {
                     System.out.println();
                 }
 
+                System.out.println(m.comment().mText);
+                printAnnotations(m.annotations());
+                printTypeName(m.returnType());
+
+                System.out.print(" " + m.name() + m.flatSignature());
+
+                if (m.defaultAnnotationElementValue() != null) {
+                    System.out.print(" default " +
+                            m.defaultAnnotationElementValue().valueString());
+                }
+
                 System.out.println();
+            }
+
+            System.out.println();
+        }
+
+        if (cl.innerClasses() != null && !cl.innerClasses().isEmpty()) {
+            System.out.println("\nInner Classes:");
+            for (ClassInfo c : cl.innerClasses()) {
+                printClassInfo(c);
             }
         }
     }
 
-    private void printTypeName(TypeInfo type) {
+    private static void printTypeName(TypeInfo type) {
         System.out.print(type.simpleTypeName());
 
         if (type.extendsBounds() != null && !type.extendsBounds().isEmpty()) {
@@ -264,17 +312,17 @@ public class InfoBuilder {
         }
     }
 
-    private void printAnnotations(ArrayList<AnnotationInstanceInfo> annotations) {
+    private static void printAnnotations(ArrayList<AnnotationInstanceInfo> annotations) {
         for (AnnotationInstanceInfo i : annotations) {
             System.out.println(i);
         }
     }
 
-    private void printTypeVariables(TypeInfo type) {
+    private static void printTypeVariables(TypeInfo type) {
         printTypeVariableList(type.typeArguments());
     }
 
-    private void printTypeVariableList(ArrayList<TypeInfo> typeList) {
+    private static void printTypeVariableList(ArrayList<TypeInfo> typeList) {
         if (typeList != null && !typeList.isEmpty()) {
             System.out.print("<");
             for (TypeInfo type : typeList) {
@@ -291,14 +339,14 @@ public class InfoBuilder {
      * Parses the file represented by the ParseTree.
      * @param tree A ParseTree of the file to parse.
      */
-    public void parseFile(ParseTree tree) {
+    private void parseFile(ParseTree tree) {
         if (tree.payload != null) {
             String payload = tree.payload.toString();
 
             // first pass at ignore method blocks
             if ("block".equals(payload) ||
-                "blockStatement".equals(payload) ||
-                "explicitConstructorInvocation".equals(payload)) {
+                    "blockStatement".equals(payload) ||
+                    "explicitConstructorInvocation".equals(payload)) {
                 tree = null;
                 return;
             }
@@ -313,19 +361,19 @@ public class InfoBuilder {
                 return;
             // classes
             } else if ("normalClassDeclaration".equals(payload)) {
-                mClasses.add(buildClass(tree, null));
+                buildClass(tree, null);
                 return;
             // enums
             }  else if ("enumDeclaration".equals(payload)) {
-                mClasses.add(buildEnum(tree, null));
+                buildEnum(tree, null);
                 return;
             // interfaces
             } else if ("normalInterfaceDeclaration".equals(payload)) {
-                mClasses.add(buildInterface(tree, null));
+                buildInterface(tree, null);
                 return;
             // annotations
             } else if ("annotationTypeDeclaration".equals(payload)) {
-                mClasses.add(buildAnnotationDeclaration(tree, null));
+                buildAnnotationDeclaration(tree, null);
                 return;
             }
         }
@@ -378,12 +426,15 @@ public class InfoBuilder {
      */
     private String buildImport(ParseTree tree) {
         StringBuilder theImport = new StringBuilder();
-        for (int i = 0; i < tree.getChildCount(); i++) {
+        for (int i = 1; i < tree.getChildCount(); i++) {
             String part = tree.getChild(i).toString();
 
-            if (!"import".equals(part) && !";".equals(part)) {
-                theImport.append(part);
+            if ((i == 1 && "static".equals(part))
+                    || (i == tree.getChildCount()-1 && ";".equals(part))) {
+                continue;
             }
+
+            theImport.append(part);
         }
 
         return theImport.toString();
@@ -435,13 +486,15 @@ public class InfoBuilder {
 
             // if ClassInfo is null, we need to add a resolution
             if (type.asClassInfo() == null) {
-                addFutureResolution(cls, "superclassQualifiedName", type.simpleTypeName());
+                addFutureResolution(cls, "superclassQualifiedName", type.simpleTypeName(), this);
             }
 
             cls.setSuperClass(type.asClassInfo());
 
             child = it.next();
         }
+
+        // TODO - do I have to make java.lang.Object the superclass if there is none otherwise?
 
         // handle implements
         if ("implements".equals(child.toString())) {
@@ -472,7 +525,7 @@ public class InfoBuilder {
 
                 // if ClassInfo is null, we need to add a resolution
                 if (type.asClassInfo() == null) {
-                    addFutureResolution(cls, "interfaceQualifiedName", type.simpleTypeName());
+                    addFutureResolution(cls, "interfaceQualifiedName", type.simpleTypeName(), this);
                 }
 
                 cls.addInterface(type.asClassInfo());
@@ -541,14 +594,19 @@ public class InfoBuilder {
         // get the class from the cache and initialize it
         cls = Caches.obtainClass(qualifiedClassName);
         cls.initialize(commentText, position,
-                       modifiers.isPublic(), modifiers.isProtected(),
-                       modifiers.isPackagePrivate(), modifiers.isPrivate(),
-                       modifiers.isStatic(), isInterface, modifiers.isAbstract(),
-                       isOrdinaryClass, isException, isError, isEnum, isAnnotation,
-                       modifiers.isFinal(), isIncluded, qualifiedTypeName, isPrimitive,
-                       modifiers.getAnnotations());
+                modifiers.isPublic(), modifiers.isProtected(),
+                modifiers.isPackagePrivate(), modifiers.isPrivate(),
+                modifiers.isStatic(), isInterface, modifiers.isAbstract(),
+                isOrdinaryClass, isException, isError, isEnum, isAnnotation,
+                modifiers.isFinal(), isIncluded, qualifiedTypeName, isPrimitive,
+                modifiers.getAnnotations());
 
         cls.setContainingClass(containingClass);
+        cls.setContainingPackage(mPackage);
+
+        if (containingClass == null) {
+            mRootClass = cls;
+        }
 
         // create an set a TypeInfo for this class
         TypeInfo type = new TypeInfo(false, null, cls.name(), qualifiedTypeName, cls);
@@ -574,9 +632,16 @@ public class InfoBuilder {
             // get to an actual definition
             ParseTree member = (ParseTree) child.getChild(0).getChild(0);
 
+            // ignores static initializers
+            if (member == null) {
+                continue;
+            }
+
             // field
             if ("fieldDeclaration".equals(member.toString())) {
-                cls.addField(buildField(member, cls));
+                for (FieldInfo f : buildFields(member, cls)) {
+                    cls.addField(f);
+                }
             // method and constructor
             } else if ("methodDeclaration".equals(member.toString())) {
                 MethodInfo method = buildMethod(member, cls, false);
@@ -591,38 +656,31 @@ public class InfoBuilder {
                 Object tmp = member.getChild(0);
 
                 if ("normalClassDeclaration".equals(tmp.toString())) {
-                    ClassInfo innerClass = buildClass((ParseTree) tmp, cls);
-                    cls.addInnerClass(innerClass);
-                    mClasses.add(innerClass);
+                    cls.addInnerClass(buildClass((ParseTree) tmp, cls));
                 } else if ("enumDeclaration".equals(tmp.toString())) {
-                    ClassInfo innerClass = buildEnum((ParseTree) tmp, cls);
-                    cls.addInnerClass(innerClass);
-                    mClasses.add(innerClass);
+                    cls.addInnerClass(buildEnum((ParseTree) tmp, cls));
                 }
             // interfaces and annotations
             } else if ("interfaceDeclaration".equals(member.toString())) {
                 Object tmp = member.getChild(0);
 
                 if ("normalInterfaceDeclaration".equals(tmp.toString())) {
-                    ClassInfo innerClass = buildInterface((ParseTree) tmp, cls);
-                    cls.addInnerClass(innerClass);
-                    mClasses.add(innerClass);
+                    cls.addInnerClass(buildInterface((ParseTree) tmp, cls));
                 } else if ("annotationTypeDeclaration".equals(tmp.toString())) {
-                    ClassInfo innerClass = buildAnnotationDeclaration((ParseTree) tmp, cls);
-                    cls.addInnerClass(innerClass);
-                    mClasses.add(innerClass);
+                    cls.addInnerClass(buildAnnotationDeclaration((ParseTree) tmp, cls));
                 }
             }
         }
     }
 
     /**
-     * Builds a FieldInfo for the field declared in this class.
+     * Builds one or more FieldInfos for the field declared in this class.
      * @param tree The tree to parse. fieldDeclaration should be the root value.
      * @param containingClass The ClassInfo in which this field is contained.
-     * @return the FieldInfo for this field
+     * @return A list of FieldInfos for this field declaration.
      */
-    private FieldInfo buildField(ParseTree tree, ClassInfo containingClass) {
+    private ArrayList<FieldInfo> buildFields(ParseTree tree, ClassInfo containingClass) {
+        ArrayList<FieldInfo> fields = new ArrayList<FieldInfo>();
         Modifiers modifiers = new Modifiers(this);
         CommentAndPosition commentAndPosition = parseCommentAndPosition(tree);
         String name = null;
@@ -644,35 +702,69 @@ public class InfoBuilder {
         child = it.next();
 
         // parse the variable declarators
-        if ("variableDeclarator".equals(child.toString())) {
-            name = child.getChild(0).toString();
+        boolean firstType = true;
+        while (!";".equals(child.toString())) {
+            if ("variableDeclarator".equals(child.toString())) {
+                TypeInfo newType;
+                if (firstType) {
+                    firstType = false;
+                    newType = type;
+                } else {
+                    newType = new TypeInfo(type.isPrimitive(), type.dimension(),
+                            type.simpleTypeName(), type.qualifiedTypeName(), type.asClassInfo());
+                    newType.setBounds(type.superBounds(), type.extendsBounds());
+                    newType.setIsWildcard(type.isWildcard());
+                    newType.setIsTypeVariable(type.isTypeVariable());
+                    newType.setTypeArguments(type.typeArguments());
+                }
+                name = child.getChild(0).toString();
 
-            // if we have a value for the field
-            if (child.getChildCount() > 1) {
-                int j = 1;
-                ParseTree tmp = null;
+                // if we have a value for the field and/or dimensions
+                if (child.getChildCount() > 1) {
+                    int j = 1;
+                    ParseTree tmp = (ParseTree) child.getChild(j++);
 
-                // get to variableInitializer
-                do {
-                    tmp = (ParseTree) child.getChild(j++);
-                } while (!"variableInitializer".equals(tmp.toString()));
+                    // if we have dimensions in the wrong place
+                    if ("[".equals(tmp.toString())) {
+                        StringBuilder builder = new StringBuilder();
 
-                // get the constantValue
-                constantValue = parseExpression(tmp);
-                hasValue = true;
+                        do {
+                            builder.append(tmp.toString());
+                            tmp = (ParseTree) child.getChild(j++);
+                        } while (j < child.getChildCount() && !"=".equals(tmp.toString()));
+
+                        newType.setDimension(builder.toString());
+                    }
+
+                    // get value if it exists
+                    if (j < child.getChildCount()) {
+                        // get to variableInitializer
+                        do {
+                            tmp = (ParseTree) child.getChild(j++);
+                        } while (!"variableInitializer".equals(tmp.toString()));
+
+                        // get the constantValue
+                        constantValue = parseExpression(tmp);
+                    }
+
+                    hasValue = true;
+                }
+
+                FieldInfo field = new FieldInfo(name, containingClass, containingClass,
+                        modifiers.isPublic(), modifiers.isProtected(),
+                        modifiers.isPackagePrivate(), modifiers.isPrivate(),
+                        modifiers.isFinal(), modifiers.isStatic(), modifiers.isTransient(),
+                        modifiers.isVolatile(), modifiers.isSynthetic(),
+                        newType, commentAndPosition.getCommentText(), constantValue,
+                        commentAndPosition.getPosition(), modifiers.getAnnotations());
+                field.setHasValue(hasValue);
+                fields.add(field);
             }
+
+            child = it.next();
         }
 
-        FieldInfo field = new FieldInfo(name, containingClass, containingClass,
-                modifiers.isPublic(), modifiers.isProtected(),
-                modifiers.isPackagePrivate(), modifiers.isPrivate(),
-                modifiers.isFinal(), modifiers.isStatic(), modifiers.isTransient(),
-                modifiers.isVolatile(), modifiers.isSynthetic(),
-                type, commentAndPosition.getCommentText(), constantValue,
-                commentAndPosition.getPosition(), modifiers.getAnnotations());
-        field.setHasValue(hasValue);
-
-        return field;
+        return fields;
     }
 
     /**
@@ -685,9 +777,23 @@ public class InfoBuilder {
         StringBuilder builder = new StringBuilder();
 
         while (!"primary".equals(tree.toString())) {
-            if ("unaryExpression".equals(tree.toString()) && tree.getChildCount() > 1) {
-                builder.append(tree.getChild(0));
-                tree = (ParseTree) tree.getChild(1);
+            if (tree.getChildCount() > 1) {
+                if ("unaryExpression".equals(tree.toString()) ||
+                        "unaryExpressionNotPlusMinus".equals(tree.toString())) {
+                    if ("selector".equals(tree.getChild(1).toString())) {
+                        return constantValue;
+                    }
+
+                    builder.append(tree.getChild(0));
+                    tree = (ParseTree) tree.getChild(1);
+                } else if ("arrayInitializer".equals(tree.toString())) {
+                    // TODO - do we wanna parse arrays or just skip it
+                    return constantValue;
+                } else {
+                    return constantValue;
+                }
+            } else if ("castExpression".equals(tree.toString())) {
+                tree = (ParseTree) tree.getChild(tree.getChildCount()-1);
             } else {
                 tree = (ParseTree) tree.getChild(0);
             }
@@ -767,7 +873,7 @@ public class InfoBuilder {
         type.setTypeArguments(typeArguments);
 
         if (addResolution) {
-            addFutureResolution(type, "class", simpleTypeName);
+            addFutureResolution(type, "class", simpleTypeName, this);
         }
 
         return type;
@@ -787,7 +893,7 @@ public class InfoBuilder {
             // if we're not dealing with a type, skip
             // basically gets rid of commas and lessthan and greater than signs
             if (!o.toString().equals("typeParameter") &&
-                !o.toString().equals("typeArgument")) {
+                    !o.toString().equals("typeArgument")) {
                 continue;
             }
 
@@ -892,15 +998,22 @@ public class InfoBuilder {
             child = it.next();
         }
 
-        // probably don't need this check any longer since I unrolled the loop
-        if (isConstructorOrMethodName(child)) {
-            // this is the method name
-            name = child.toString();
+        // this is the method name
+        name = child.toString();
 
-            if (name.equals(containingClass.name())) {
-                kind = "constructor";
-            }
+        if (name.equals(containingClass.name())) {
+            kind = "constructor";
         }
+
+        // probably don't need this check any longer since I unrolled the loop
+//        if (isConstructorOrMethodName(child)) {
+//            // this is the method name
+//            name = child.toString();
+//
+//            if (name.equals(containingClass.name())) {
+//                kind = "constructor";
+//            }
+//        }
 
         child = it.next();
 
@@ -931,7 +1044,7 @@ public class InfoBuilder {
                         exceptionQualifiedName, this);
 
                 if ("".equals(exceptionQualifiedName.toString())) {
-                    pendingResolutions.add(new Resolution("thrownException", exceptionName));
+                    pendingResolutions.add(new Resolution("thrownException", exceptionName, null));
                 } else if (!isGeneric) {
                     thrownExceptions.add(Caches.obtainClass(exceptionQualifiedName.toString()));
                 }
@@ -964,17 +1077,10 @@ public class InfoBuilder {
         method.init(elementValue);
 
         for (Resolution r : pendingResolutions) {
-            addFutureResolution(method, r.getVariable(), r.getValue());
+            addFutureResolution(method, r.getVariable(), r.getValue(), this);
         }
 
         return method;
-    }
-
-    private boolean isConstructorOrMethodName(ParseTree tree) {
-        String tmp = tree.toString();
-        return (!"{".equals(tmp) && !"}".equals(tmp) && !";".equals(tmp) &&
-                !"explicitConstructorInvocation".equals(tmp) &&
-                !"blockStatement".equals(tmp) && !"block".equals(tmp));
     }
 
     /**
@@ -1001,34 +1107,42 @@ public class InfoBuilder {
                         continue;
                     }
 
-                    for (Object item : param.getChildren()) {
-                        ParseTree paramPart = (ParseTree) item;
+                    @SuppressWarnings("unchecked")
+                    Iterator<ParseTree> it = (Iterator<ParseTree>) param.getChildren().iterator();
 
-                        if ("variableModifiers".equals(item.toString())) {
-                            // TODO - handle variable modifiers - final, etc
-                        } else if ("type".equals(paramPart.toString())) {
-                            type = buildType(paramPart);
+                    ParseTree paramPart = it.next();
 
-                            buildSignatureForType(flatSignature, type);
-
-                            if (param != child.getChildren().get(child.getChildCount()-1)) {
-                                flatSignature.append(", ");
-                            }
-                        } else if ("...".equals(paramPart.toString())) {
-                            isVarArg = true;
-                            // thank you varargs for only being the last parameter
-                            // you make life so much nicer
-                            flatSignature.append("...");
-                        } else {
-                            String name = paramPart.toString();
-
-                            CommentAndPosition commentAndPosition = new CommentAndPosition();
-                            commentAndPosition.setPosition(paramPart);
-
-                            parameters.add(new ParameterInfo(name, type.qualifiedTypeName(), type,
-                                    isVarArg, commentAndPosition.getPosition()));
-                        }
+                    if ("variableModifiers".equals(paramPart.toString())) {
+                        // TODO - handle variable modifiers - final, etc
                     }
+
+                    paramPart = it.next();
+
+                    type = buildType(paramPart);
+
+                    buildSignatureForType(flatSignature, type);
+
+                    if (param != child.getChildren().get(child.getChildCount()-1)) {
+                        flatSignature.append(", ");
+                    }
+
+                    paramPart = it.next();
+
+                    if ("...".equals(paramPart.toString())) {
+                        isVarArg = true;
+                        // thank you varargs for only being the last parameter
+                        // you make life so much nicer
+                        flatSignature.append("...");
+                        paramPart = it.next();
+                    }
+
+                    String name = paramPart.toString();
+
+                    CommentAndPosition commentAndPosition = new CommentAndPosition();
+                    commentAndPosition.setPosition(paramPart);
+
+                    parameters.add(new ParameterInfo(name, type.qualifiedTypeName(), type,
+                            isVarArg, commentAndPosition.getPosition()));
                 }
             }
         }
@@ -1086,6 +1200,8 @@ public class InfoBuilder {
                 commentAndPosition.getCommentText(),
                 commentAndPosition.getPosition(), ClassType.ENUM);
 
+        child = it.next();
+
         // handle implements
         if ("implements".equals(child.toString())) {
             child = it.next();
@@ -1095,7 +1211,6 @@ public class InfoBuilder {
             child = it.next();
         }
 
-        child = it.next();
         buildEnumBody(child, cls);
 
         return cls;
@@ -1132,15 +1247,44 @@ public class InfoBuilder {
      * @return
      */
     private FieldInfo buildEnumConstant(ParseTree tree, ClassInfo containingClass) {
-        tree = (ParseTree) tree.getChild(0);
+        @SuppressWarnings("unchecked")
+        Iterator<ParseTree> it = (Iterator<ParseTree>) tree.getChildren().iterator();
+        ParseTree child = it.next();
 
-        String name = tree.toString();
+        Modifiers modifiers = new Modifiers(this);
+        if ("annotations".equals(child.toString())) {
+            modifiers.parseModifiers(child);
+            child = it.next();
+        }
+
+        String name = child.toString();
         CommentAndPosition commentAndPosition = new CommentAndPosition();
-        commentAndPosition.setCommentText(tree);
-        commentAndPosition.setPosition(tree);
+        commentAndPosition.setCommentText(child);
+        commentAndPosition.setPosition(child);
         Object constantValue = null;
 
-        // TODO - annotations and constantValue stuff
+        // get constantValue if it exists
+        if (it.hasNext()) {
+            child = it.next();
+
+            // if we have an expressionList
+            if (child.getChildCount() == 3) {
+                StringBuilder builder = new StringBuilder();
+                child = (ParseTree) child.getChild(1); // get the middle child
+
+                for (Object o : child.getChildren()) {
+                    if ("expression".equals(o.toString())) {
+                        builder.append(parseExpression((ParseTree) o));
+
+                        if (o != child.getChild(child.getChildCount()-1)) {
+                            builder.append(", ");
+                        }
+                    }
+                }
+
+                constantValue = builder.toString();
+            }
+        }
 
         return new FieldInfo(name, containingClass, containingClass, containingClass.isPublic(),
         containingClass.isProtected(), containingClass.isPackagePrivate(),
@@ -1148,7 +1292,7 @@ public class InfoBuilder {
         containingClass.isStatic(), false, false, false,
         containingClass.type(), commentAndPosition.getCommentText(),
         constantValue, commentAndPosition.getPosition(),
-        new ArrayList<AnnotationInstanceInfo>());
+        modifiers.getAnnotations());
     }
 
     /**
@@ -1212,9 +1356,15 @@ public class InfoBuilder {
 
             ParseTree child = (ParseTree) ((ParseTree) o).getChild(0);
 
+            if (";".equals(child.toString())) {
+                continue;
+            }
+
             // field
             if ("interfaceFieldDeclaration".equals(child.toString())) {
-                iface.addField(buildField(child, iface));
+                for (FieldInfo f : buildFields(child, iface)) {
+                    iface.addField(f);
+                }
             // method
             } else if ("interfaceMethodDeclaration".equals(child.toString())) {
                 iface.addMethod(buildMethod(child, iface, false));
@@ -1288,23 +1438,25 @@ public class InfoBuilder {
 
             // annotation fields
             if ("interfaceFieldDeclaration".equals(child.toString())) {
-                annotation.addField(buildField(child, annotation));
+                for (FieldInfo f : buildFields(child, annotation)) {
+                    annotation.addField(f);
+                }
             // annotation methods
             } else if ("annotationMethodDeclaration".equals(child.toString())) {
                 annotation.addAnnotationElement(buildMethod(child, annotation, true));
             // inner class
-            } else if ("normalClassDeclaration".equals(child.getChild(0).toString())) {
-                annotation.addInnerClass(buildClass((ParseTree) child.getChild(0), annotation));
+            } else if ("normalClassDeclaration".equals(child.toString())) {
+                annotation.addInnerClass(buildClass((ParseTree) child, annotation));
             // enum
-            } else if ("enumDeclaration".equals(child.getChild(0).toString())) {
-                annotation.addInnerClass(buildEnum((ParseTree) child.getChild(0), annotation));
+            } else if ("enumDeclaration".equals(child.toString())) {
+                annotation.addInnerClass(buildEnum((ParseTree) child, annotation));
             // inner interface
-            } else if ("normalInterfaceDeclaration".equals(child.getChild(0).toString())) {
-                annotation.addInnerClass(buildInterface((ParseTree) child.getChild(0), annotation));
+            } else if ("normalInterfaceDeclaration".equals(child.toString())) {
+                annotation.addInnerClass(buildInterface((ParseTree) child, annotation));
             // inner annotation
-            } else if ("annotationTypeDeclaration".equals(child.getChild(0).toString())) {
+            } else if ("annotationTypeDeclaration".equals(child.toString())) {
                 annotation.addInnerClass(buildAnnotationDeclaration(
-                        (ParseTree) child.getChild(0), annotation));
+                        (ParseTree) child, annotation));
             }
         }
     }
@@ -1330,8 +1482,8 @@ public class InfoBuilder {
         resolveQualifiedName(name, qualifiedNameBuilder, builder);
 
         if ("".equals(qualifiedNameBuilder.toString())) {
-            addFutureResolution(annotationInstance, "annotationTypeName", name);
-            annotationInstance.setClassName(name);
+            addFutureResolution(annotationInstance, "annotationTypeName", name, builder);
+            annotationInstance.setSimpleAnnotationName(name); // TODO - remove once we've completed the parser
         } else { // can't have generics here so we won't do a test
             annotationInstance.setClass(Caches.obtainClass(qualifiedNameBuilder.toString()));
         }
@@ -1357,8 +1509,9 @@ public class InfoBuilder {
 
                 // try and look up the MethodInfo for this annotation, if possible
                 if (annotationInstance.type() != null) {
-                    for (MethodInfo m : annotationInstance.type().allSelfMethods()) {
-                        if (methodName.equals(m.name())) {
+                    for (MethodInfo m : annotationInstance.type().annotationElements()) {
+                        if (methodName.equals(m.name()) ||
+                                annotationInstance.type().annotationElements().size() == 1) {
                             element = m;
                             break;
                         }
@@ -1370,7 +1523,8 @@ public class InfoBuilder {
                         (ParseTree) inner.getChild(2), builder);
 
                 if (element == null) {
-                    addFutureResolution(info, "element", methodName);
+                    addFutureResolution(info, "element", methodName, builder);
+                    info.setAnnotationInstanceName(name);
                 } else {
                     info.setElement(element);
                 }
@@ -1443,9 +1597,11 @@ public class InfoBuilder {
      * @param resolvable Resolvable to which the data refers.
      * @param variable Variable in the document to which the data refers;
      * @param value Value for the variable
+     * @param builder The InfoBuilder of this file
      */
-    private static void addFutureResolution(Resolvable resolvable, String variable, String value) {
-        resolvable.addResolution(new Resolution(variable, value));
+    private static void addFutureResolution(Resolvable resolvable, String variable,
+            String value, InfoBuilder builder) {
+        resolvable.addResolution(new Resolution(variable, value, builder));
 
         Caches.addResolvableToCache(resolvable);
     }
@@ -1460,11 +1616,18 @@ public class InfoBuilder {
      * to properly resolve the name.
      * @return a boolean is returned that will be true if the type is a generic. false otherwise.
      */
-    private static boolean resolveQualifiedName(String name,
+    public static boolean resolveQualifiedName(String name,
                                                 StringBuilder qualifiedClassName,
                                                 InfoBuilder builder) {
         // steps to figure out a class's real name
         // check class(es) in this file
+
+        // trying something out. let's see how this works
+        if (name.indexOf('.') != -1) {
+            qualifiedClassName.append(name);
+            return false;
+        }
+
         // TODO - search since we're now a HashSet
         for (String className : builder.getClassNames()) {
             int beginIndex = className.lastIndexOf(".") + 1;
@@ -1485,6 +1648,19 @@ public class InfoBuilder {
 
         potentialClass = null;
 
+        String potentialName = null;
+        // check superclass and interfaces for type
+        if (builder.getRootClass() != null) {
+            potentialName = resolveQualifiedNameInInheritedClass(name, builder.getRootClass(),
+                    builder.getRootClass().containingPackage().name());
+        }
+
+        if (potentialName != null) {
+            qualifiedClassName.append(potentialName);
+            return false;
+        }
+
+
         // check class imports - ie, java.lang.String;
         ArrayList<String> packagesToCheck = new ArrayList<String>();
         for (String imp : builder.getImports()) {
@@ -1498,6 +1674,15 @@ public class InfoBuilder {
             } else if (endOfName.equals("*")) {
                 // add package to check
                 packagesToCheck.add(imp.substring(0, imp.lastIndexOf('.')));
+            } else {
+                // check inner classes
+                ClassInfo cl = Caches.obtainClass(imp);
+                String possibleName = resolveQualifiedInnerName(cl.qualifiedName() + "." + name,
+                        cl);
+                if (possibleName != null) {
+                    qualifiedClassName.append(possibleName);
+                    return false;
+                }
             }
         }
 
@@ -1507,8 +1692,8 @@ public class InfoBuilder {
 
             ClassInfo cls = pkg.getClass(name);
 
-            if (cls != null && cls.name().equals(name)) {
-                qualifiedClassName.append(cls.qualifiedTypeName());
+            if (cls != null && name.equals(cls.name())) {
+                qualifiedClassName.append(cls.qualifiedName());
                 return qualifiedClassName.toString().equals(name);
             }
         }
@@ -1523,6 +1708,63 @@ public class InfoBuilder {
         // Return the ClassDoc if found, null if not found.
 
         return false;
+    }
+
+    private static String resolveQualifiedNameInInheritedClass(String name, ClassInfo cl,
+            String originalPackage) {
+        ArrayList<ClassInfo> classesToCheck = new ArrayList<ClassInfo>();
+        if (cl != null) {
+            // if we're in a new package only, check it
+            if (cl.containingPackage() != null &&
+                    !originalPackage.equals(cl.containingPackage().name())) {
+                // check for new class
+                ClassInfo cls = cl.containingPackage().getClass(name);
+
+                if (cls != null && name.equals(cls.name())) {
+                    return cls.name();
+                }
+            }
+
+            if (cl.realSuperclass() != null) {
+                classesToCheck.add(cl.realSuperclass());
+            }
+
+            if (cl.realInterfaces() != null) {
+                for (ClassInfo iface : cl.realInterfaces()) {
+                    classesToCheck.add(iface);
+                }
+            }
+
+            for (ClassInfo cls : classesToCheck) {
+                String potential = resolveQualifiedNameInInheritedClass(name, cls, originalPackage);
+
+                if (potential != null) {
+                    return potential;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String resolveQualifiedInnerName(String possibleQualifiedName, ClassInfo cl) {
+        if (cl.innerClasses() == null) {
+            return null;
+        }
+
+        for (ClassInfo inner : cl.innerClasses()) {
+            if (possibleQualifiedName.equals(inner.qualifiedName())) {
+                return possibleQualifiedName;
+            }
+
+            String name = resolveQualifiedInnerName(possibleQualifiedName + "." + inner.name(),
+                    inner);
+
+            if (name != null) {
+                return name;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1715,7 +1957,7 @@ public class InfoBuilder {
     /**
      * Singleton class to store all of the global data amongst every InfoBuilder.
      */
-    private static class Caches {
+    public static class Caches {
         private static HashMap<String, PackageInfo> mPackages
                                         = new HashMap<String, PackageInfo>();
         private static HashMap<String, ClassInfo> mClasses
@@ -1734,17 +1976,29 @@ public class InfoBuilder {
             return pkg;
         }
 
+        /**
+         * Gets the ClassInfo from the master list or creates a new one if it does not exist.
+         * @param qualifiedClassName Qualified name of the ClassInfo to obtain.
+         * @return the ClassInfo
+         */
         public static ClassInfo obtainClass(String qualifiedClassName) {
             ClassInfo cls = mClasses.get(qualifiedClassName);
 
             if (cls == null) {
                 cls = new ClassInfo(qualifiedClassName);
                 mClasses.put(cls.qualifiedName(), cls);
-                cls.setContainingPackage(Caches.obtainPackage(
-                        cls.qualifiedName().substring(0, cls.qualifiedName().lastIndexOf('.'))));
             }
 
             return cls;
+        }
+
+        /**
+         * Gets the ClassInfo from the master list or returns null if it does not exist.
+         * @param qualifiedClassName Qualified name of the ClassInfo to obtain.
+         * @return the ClassInfo or null, if the ClassInfo does not exist.
+         */
+        public static ClassInfo getClass(String qualifiedClassName) {
+            return mClasses.get(qualifiedClassName);
         }
 
         public static void addResolvableToCache(Resolvable resolvable) {
@@ -1752,8 +2006,27 @@ public class InfoBuilder {
         }
 
         public static void printResolutions() {
+            if (mInfosToResolve.isEmpty()) {
+                System.out.println("We've resolved everything.");
+                return;
+            }
+
             for (Resolvable r : mInfosToResolve) {
                 r.printResolutions();
+                System.out.println();
+            }
+        }
+
+        public static void resolve() {
+            HashSet<Resolvable> resolveList = mInfosToResolve;
+            mInfosToResolve = new HashSet<Resolvable>();
+
+            for (Resolvable r : resolveList) {
+                // if we could not resolve everything in this class
+                if (!r.resolveResolutions()) {
+                    mInfosToResolve.add(r);
+                }
+
                 System.out.println();
             }
         }
@@ -1767,11 +2040,11 @@ public class InfoBuilder {
         return mImports;
     }
 
-    public ArrayList<ClassInfo>  getClasses() {
-        return mClasses;
-    }
-
     public HashSet<String> getClassNames() {
         return mClassNames;
+    }
+
+    public ClassInfo getRootClass() {
+        return mRootClass;
     }
 }

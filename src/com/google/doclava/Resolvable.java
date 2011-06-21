@@ -22,10 +22,10 @@ package com.google.doclava;
  *
  * <p>This interface provides a standard means of saving {@link Resolution}s that we will
  * later resolve once we have parsed every file. This is provided via the
- * {@link Resolvable#addResolution(Resolution)} method.
+ * {@link addResolution(Resolution)} method.
  *
  * <p>Additionally, This interface provides a standard means of resolving all resolutions
- * via the // ADD LINK HERE TO FUTURE RESOLVE FUNCTION // method.
+ * via the {@link#resolveResolutions()} method.
  */
 public interface Resolvable {
     /**
@@ -33,6 +33,13 @@ public interface Resolvable {
      * @param resolution The {@link Resolution} to resolve at a later time.
      */
     public void addResolution(Resolution resolution);
+
+    /**
+     * Resolves the {@link Resolution}s contained in this {@link Resolvable}.
+     * @return <tt>true</tt> if all resolutions were resolved.
+     * <tt>false</tt> if there are still remaining resolutions.
+     */
+    public boolean resolveResolutions();
 
     /**
      * Prints the list of {@link Resolution}s that will be resolved at a later time.

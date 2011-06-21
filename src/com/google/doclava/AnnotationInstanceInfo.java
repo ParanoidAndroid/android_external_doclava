@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 public class AnnotationInstanceInfo implements Resolvable {
   private ClassInfo mType;
-  private String mName; // for temp purposes
+  private String mAnnotationName; // for debugging purposes TODO - remove
   private ArrayList<AnnotationValueInfo> mElementValues;
   private ArrayList<Resolution> mResolutions;
 
@@ -43,8 +43,8 @@ public class AnnotationInstanceInfo implements Resolvable {
       mType = cl;
   }
 
-  public void setClassName(String name) {
-      mName = name;
+  public void setSimpleAnnotationName(String name) {
+      mAnnotationName = name;
   }
 
   ArrayList<AnnotationValueInfo> elementValues() {
@@ -60,7 +60,7 @@ public class AnnotationInstanceInfo implements Resolvable {
     StringBuilder str = new StringBuilder();
     str.append("@");
     if (mType == null) {
-        str.append(mName);
+        str.append(mAnnotationName);
     } else {
         str.append(mType.qualifiedName());
     }
@@ -94,5 +94,27 @@ public class AnnotationInstanceInfo implements Resolvable {
       for (Resolution r : mResolutions) {
           System.out.println(r);
       }
+  }
+
+  public boolean resolveResolutions() {
+      ArrayList<Resolution> resolutions = mResolutions;
+      mResolutions = new ArrayList<Resolution>();
+
+      boolean allResolved = true;
+      for (Resolution resolution : resolutions) {
+          StringBuilder qualifiedClassName = new StringBuilder();
+          InfoBuilder.resolveQualifiedName(resolution.getValue(), qualifiedClassName,
+                  resolution.getInfoBuilder());
+
+          // if we still couldn't resolve it, save it for the next pass
+          if ("".equals(qualifiedClassName.toString())) {
+              mResolutions.add(resolution);
+              allResolved = false;
+          } else if ("annotationTypeName".equals(resolution.getVariable())) {
+              setClass(InfoBuilder.Caches.obtainClass(qualifiedClassName.toString()));
+          }
+      }
+
+      return allResolved;
   }
 }

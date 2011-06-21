@@ -110,6 +110,10 @@ public class TypeInfo implements Resolvable {
     return mDimension;
   }
 
+  public void setDimension(String dimension) {
+      mDimension = dimension;
+  }
+
   public String simpleTypeName() {
     return mSimpleTypeName;
   }
@@ -288,6 +292,10 @@ public class TypeInfo implements Resolvable {
     mIsWildcard = b;
   }
 
+  public boolean isWildcard() {
+      return mIsWildcard;
+  }
+
   static HashSet<String> typeVariables(ArrayList<TypeInfo> params) {
     return typeVariables(params, new HashSet<String>());
   }
@@ -358,10 +366,38 @@ public class TypeInfo implements Resolvable {
   }
 
   public void printResolutions() {
+      if (mResolutions == null || mResolutions.isEmpty()) {
+          return;
+      }
+
       System.out.println("Resolutions for Type " + mSimpleTypeName + ":");
       for (Resolution r : mResolutions) {
           System.out.println(r);
       }
+  }
+
+  public boolean resolveResolutions() {
+      ArrayList<Resolution> resolutions = mResolutions;
+      mResolutions = new ArrayList<Resolution>();
+
+      boolean allResolved = true;
+      for (Resolution resolution : resolutions) {
+          if ("class".equals(resolution.getVariable())) {
+              StringBuilder qualifiedClassName = new StringBuilder();
+              InfoBuilder.resolveQualifiedName(resolution.getValue(), qualifiedClassName,
+                      resolution.getInfoBuilder());
+
+              // if we still couldn't resolve it, save it for the next pass
+              if ("".equals(qualifiedClassName.toString())) {
+                  mResolutions.add(resolution);
+                  allResolved = false;
+              } else {
+                  mClass = InfoBuilder.Caches.obtainClass(qualifiedClassName.toString());
+              }
+          }
+      }
+
+      return allResolved;
   }
 
   private ArrayList<Resolution> mResolutions;

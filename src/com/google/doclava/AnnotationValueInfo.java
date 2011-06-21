@@ -21,9 +21,13 @@ import java.util.ArrayList;
 public class AnnotationValueInfo implements Resolvable {
   private Object mValue;
   private MethodInfo mElement;
+  private String mInstanceName; // exists solely for resolving elements
   private ArrayList<Resolution> mResolutions;
 
   public AnnotationValueInfo() {
+      mElement = null;
+      mValue = null;
+      mInstanceName = null;
   }
 
   public AnnotationValueInfo(MethodInfo element) {
@@ -44,6 +48,10 @@ public class AnnotationValueInfo implements Resolvable {
 
   public Object value() {
     return mValue;
+  }
+
+  public void setAnnotationInstanceName(String instance) {
+      mInstanceName = instance;
   }
 
   public String valueString() {
@@ -92,5 +100,34 @@ public class AnnotationValueInfo implements Resolvable {
       for (Resolution r : mResolutions) {
           System.out.println(r);
       }
+  }
+
+  public boolean resolveResolutions() {
+      ArrayList<Resolution> resolutions = mResolutions;
+      mResolutions = new ArrayList<Resolution>();
+
+      boolean allResolved = true;
+      for (Resolution resolution : resolutions) {
+          StringBuilder qualifiedClassName = new StringBuilder();
+          InfoBuilder.resolveQualifiedName(mInstanceName, qualifiedClassName,
+                  resolution.getInfoBuilder());
+
+          // if we still couldn't resolve it, save it for the next pass
+          if ("".equals(qualifiedClassName.toString())) {
+              mResolutions.add(resolution);
+              allResolved = false;
+          } else if ("element".equals(resolution.getVariable())) {
+              ClassInfo annotation = InfoBuilder.Caches.obtainClass(qualifiedClassName.toString());
+              for (MethodInfo m : annotation.annotationElements()) {
+                  if (resolution.getValue().equals(m.name()) ||
+                          annotation.annotationElements().size() == 1) {
+                      mElement = m;
+                      break;
+                  }
+              }
+          }
+      }
+
+      return allResolved;
   }
 }

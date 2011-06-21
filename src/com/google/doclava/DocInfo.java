@@ -18,11 +18,11 @@ package com.google.doclava;
 
 import com.google.clearsilver.jsilver.data.Data;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.Set;
 
-public abstract class DocInfo implements Resolvable {
+public abstract class DocInfo {
   public DocInfo(String rawCommentText, SourcePositionInfo sp) {
     mRawCommentText = rawCommentText;
     mPosition = sp;
@@ -102,24 +102,9 @@ public abstract class DocInfo implements Resolvable {
     }
   }
 
-  public void addResolution(Resolution resolution) {
-      if (mResolutions == null) {
-          mResolutions = new LinkedList<Resolution>();
-      }
-
-      mResolutions.add(resolution);
-  }
-
-  public void printResolutions() {
-      for (Resolution r : mResolutions) {
-          System.out.println(r);
-      }
-  }
-
   private String mRawCommentText;
   Comment mComment;
   SourcePositionInfo mPosition;
   private String mSince;
   private Set<FederatedSite> mFederatedReferences = new LinkedHashSet<FederatedSite>();
-  private LinkedList<Resolution> mResolutions;
 }

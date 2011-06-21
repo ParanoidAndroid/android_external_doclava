@@ -21,7 +21,7 @@ import com.google.doclava.apicheck.AbstractMethodInfo;
 
 import java.util.*;
 
-public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
+public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolvable {
   public static final Comparator<MethodInfo> comparator = new Comparator<MethodInfo>() {
     public int compare(MethodInfo a, MethodInfo b) {
         return a.name().compareTo(b.name());
@@ -667,6 +667,7 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   private ArrayList<TypeInfo> mTypeParameters;
   private AnnotationValueInfo mDefaultAnnotationElementValue;
   private String mReasonOpened;
+  private ArrayList<Resolution> mResolutions;
   
   // TODO: merge with droiddoc version (above)  
   public String qualifiedName() {
@@ -794,8 +795,44 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo {
   }
 
   public void printResolutions() {
+      if (mResolutions == null || mResolutions.isEmpty()) {
+          return;
+      }
+
       System.out.println("Resolutions for Method " + mName + mFlatSignature + ":");
 
-      super.printResolutions();
+      for (Resolution r : mResolutions) {
+          System.out.println(r);
+      }
+  }
+
+  public void addResolution(Resolution resolution) {
+      if (mResolutions == null) {
+          mResolutions = new ArrayList<Resolution>();
+      }
+
+      mResolutions.add(resolution);
+  }
+
+  public boolean resolveResolutions() {
+      ArrayList<Resolution> resolutions = mResolutions;
+      mResolutions = new ArrayList<Resolution>();
+
+      boolean allResolved = true;
+      for (Resolution resolution : resolutions) {
+          StringBuilder qualifiedClassName = new StringBuilder();
+          InfoBuilder.resolveQualifiedName(resolution.getValue(), qualifiedClassName,
+                  resolution.getInfoBuilder());
+
+          // if we still couldn't resolve it, save it for the next pass
+          if ("".equals(qualifiedClassName.toString())) {
+              mResolutions.add(resolution);
+              allResolved = false;
+          } else if ("thrownException".equals(resolution.getVariable())) {
+              mThrownExceptions.add(InfoBuilder.Caches.obtainClass(qualifiedClassName.toString()));
+          }
+      }
+
+      return allResolved;
   }
 }

@@ -10,3 +10,6 @@ using the -debug flag so that a parse tree is generated
 When this step was last done, there were some extra files generated,
 these were ignored and discarded. For use, see the Parse Trees link
 above for a basic example.
+
+Steps:
+java -Xmx1G -jar ~/Downloads/antlr-3.3-complete.jar -debug src/com/google/doclava/parser/Java.g
