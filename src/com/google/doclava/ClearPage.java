@@ -19,11 +19,13 @@ package com.google.doclava;
 import com.google.clearsilver.jsilver.JSilver;
 import com.google.clearsilver.jsilver.data.Data;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,9 +133,9 @@ public class ClearPage {
 
     ensureDirectory(file);
 
-    OutputStreamWriter stream = null;
+    Writer stream = null;
     try {
-      stream = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+      stream = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
       String rendered = cs.render(templ, data);
       stream.write(rendered, 0, rendered.length());
     } catch (IOException e) {

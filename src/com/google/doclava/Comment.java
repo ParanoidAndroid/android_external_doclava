@@ -21,15 +21,6 @@ import java.util.regex.Matcher;
 import java.util.ArrayList;
 
 public class Comment {
-  static final Pattern LEADING_WHITESPACE = Pattern.compile("^[ \t\n\r]*(.*)$", Pattern.DOTALL);
-
-  static final Pattern TAG_BEGIN = Pattern.compile("[\r\n][\r\n \t]*@", Pattern.DOTALL);
-
-  static final Pattern TAG = Pattern.compile("(@[^ \t\r\n]+)[ \t\r\n]+(.*)", Pattern.DOTALL);
-
-  static final Pattern INLINE_TAG =
-      Pattern.compile("(.*?)\\{(@[^ \t\r\n\\}]+)[ \t\r\n]*(.*?)\\}", Pattern.DOTALL);
-
   static final Pattern FIRST_SENTENCE =
       Pattern.compile("((.*?)\\.)[ \t\r\n\\<](.*)", Pattern.DOTALL);
 
@@ -56,56 +47,255 @@ public class Comment {
     mPosition = SourcePositionInfo.findBeginning(sp, text);
   }
 
-  private void parseRegex(String text) {
-    Matcher m;
+  private void parseCommentTags(String text) {
+      int i = 0;
+      int length = text.length();
+      while (i < length  && isWhitespaceChar(text.charAt(i++))) {}
 
-    m = LEADING_WHITESPACE.matcher(text);
-    m.matches();
-    text = m.group(1);
+      if (i <=  0) {
+          return;
+      }
 
-    m = TAG_BEGIN.matcher(text);
+      text = text.substring(i-1);
+      length = text.length();
 
-    int start = 0;
-    int end = 0;
-    while (m.find()) {
-      end = m.start();
+      if ("".equals(text)) {
+          return;
+      }
 
-      tag(text, start, end);
+      int start = 0;
+      int end = findStartOfBlock(text, start);
 
-      start = m.end() - 1; // -1 is the @
-    }
-    end = text.length();
-    tag(text, start, end);
+
+      // possible scenarios
+      //    main and block(s)
+      //    main only (end == -1)
+      //    block(s) only (end == 0)
+
+      switch (end) {
+          case -1: // main only
+              parseMainDescription(text, start, length);
+              return;
+          case 0: // block(s) only
+              break;
+          default: // main and block
+
+              // find end of main because end is really the beginning of @
+              parseMainDescription(text, start, findEndOfMainOrBlock(text, start, end));
+              break;
+      }
+
+      // parse blocks
+      for (start = end; start < length; start = end) {
+          end = findStartOfBlock(text, start+1);
+
+          if (end == -1) {
+              parseBlock(text, start, length);
+              break;
+          } else {
+              parseBlock(text, start, findEndOfMainOrBlock(text, start, end));
+          }
+      }
+
+      // for each block
+      //    make block parts
+      //        end is either next @ at beginning of line or end of text
   }
 
-  private void tag(String text, int start, int end) {
-    SourcePositionInfo pos = SourcePositionInfo.add(mPosition, mText, start);
-
-    if (start >= 0 && end > 0 && (end - start) > 0) {
-      text = text.substring(start, end);
-
-      Matcher m = TAG.matcher(text);
-      if (m.matches()) {
-        // out of line tag
-        tag(m.group(1), m.group(2), false, pos);
-      } else {
-        // look for inline tags
-        m = INLINE_TAG.matcher(text);
-        start = 0;
-        while (m.find()) {
-          String str = m.group(1);
-          String tagname = m.group(2);
-          String tagvalue = m.group(3);
-          tag(null, m.group(1), true, pos);
-          tag(tagname, tagvalue, true, pos);
-          start = m.end();
-        }
-        int len = text.length();
-        if (start != len) {
-          tag(null, text.substring(start), true, pos);
-        }
+  private int findEndOfMainOrBlock(String text, int start, int end) {
+      for (int i = end-1; i >= start; i--) {
+          if (!isWhitespaceChar(text.charAt(i))) {
+              end = i+1;
+              break;
+          }
       }
-    }
+      return end;
+  }
+
+  private void parseMainDescription(String mainDescription, int start, int end) {
+      if (mainDescription == null) {
+          return;
+      }
+
+      SourcePositionInfo pos = SourcePositionInfo.add(mPosition, mText, 0);
+      while (start < end) {
+          int startOfInlineTag = findStartIndexOfInlineTag(mainDescription, start, end);
+
+          // if there are no more tags
+          if (startOfInlineTag == -1) {
+              tag(null, mainDescription.substring(start, end), true, pos);
+              return;
+          }
+
+          //int endOfInlineTag = mainDescription.indexOf('}', startOfInlineTag);
+          int endOfInlineTag = findEndIndexOfInlineTag(mainDescription, startOfInlineTag, end);
+
+          // if there was only beginning tag
+          if (endOfInlineTag == -1) {
+              // parse all of main as one tag
+              tag(null, mainDescription.substring(start, end), true, pos);
+              return;
+          }
+
+          endOfInlineTag++; // add one to make it a proper ending index
+
+          // do first part without an inline tag - ie, just plaintext
+          tag(null, mainDescription.substring(start, startOfInlineTag), true, pos);
+
+          // parse the rest of this section, the inline tag
+          parseInlineTag(mainDescription, startOfInlineTag, endOfInlineTag, pos);
+
+          // keep going
+          start = endOfInlineTag;
+      }
+  }
+
+  private int findStartIndexOfInlineTag(String text, int fromIndex, int toIndex) {
+      for (int i = fromIndex; i < (toIndex-3); i++) {
+          if (text.charAt(i) == '{' && text.charAt(i+1) == '@' && !isWhitespaceChar(text.charAt(i+2))) {
+              return i;
+          }
+      }
+
+      return -1;
+  }
+
+  private int findEndIndexOfInlineTag(String text, int fromIndex, int toIndex) {
+      for (int i = fromIndex; i < toIndex; i++) {
+          if (text.charAt(i) == '}') {
+              return i;
+          }
+      }
+
+      return -1;
+  }
+
+  private void parseInlineTag(String text, int start, int end, SourcePositionInfo pos) {
+      int index = start+1;
+      //int len = text.length();
+      char c = text.charAt(index);
+      // find the end of the tag name "@something"
+      // need to do something special if we have '}'
+      while (index < end && !isWhitespaceChar(c)) {
+
+          // if this tag has no value, just return with tag name only
+          if (c == '}') {
+              // TODO - should value be "" or null?
+              tag(text.substring(start+1, end), null, true, pos);
+              return;
+          }
+          c = text.charAt(index++);
+      }
+
+      // don't parse things that don't have at least one extra character after @
+      // probably should be plus 3
+      // TODO - remove this - think it's fixed by change in parseMainDescription
+      if (index == start+3) {
+          return;
+      }
+
+      int endOfFirstPart = index-1;
+
+      // get to beginning of tag value
+      while (index < end && isWhitespaceChar(text.charAt(index++))) {}
+      int startOfSecondPart = index-1;
+
+      // +1 to get rid of opening brace and -1 to get rid of closing brace
+      // maybe i wanna make this more elegant
+      tag(text.substring(start+1, endOfFirstPart),
+              text.substring(startOfSecondPart, end-1), true, pos);
+  }
+
+
+  /**
+   * Finds the index of the start of a new block comment or -1 if there are
+   * no more starts.
+   * @param text The String to search
+   * @param start the index of the String to start searching
+   * @return The index of the start of a new block comment or -1 if there are
+   * no more starts.
+   */
+  private int findStartOfBlock(String text, int start) {
+      // how to detect we're at a new @
+      //       if the chars to the left of it are \r or \n, we're at one
+      //       if the chars to the left of it are ' ' or \t, keep looking
+      //       otherwise, we're in the middle of a block, keep looking
+      int index = text.indexOf('@', start);
+
+      // no @ in text or index at first position
+      if (index == -1 ||
+              (index == 0 && text.length() > 1 && !isWhitespaceChar(text.charAt(index+1)))) {
+          return index;
+      }
+
+      index = getPossibleStartOfBlock(text, index);
+
+      int i = index-1; // start at the character immediately to the left of @
+      char c;
+      while (i >= 0) {
+          c = text.charAt(i--);
+
+          // found a new block comment because we're at the beginning of a line
+          if (c == '\r' || c == '\n') {
+              return index;
+          }
+
+          // there is a non whitespace character to the left of the @
+          // before finding a new line, keep searching
+          if (c != ' ' && c != '\t') {
+              index = getPossibleStartOfBlock(text, index+1);
+              i = index-1;
+          }
+
+          // some whitespace character, so keep looking, we might be at a new block comment
+      }
+
+      return -1;
+  }
+
+  private int getPossibleStartOfBlock(String text, int index) {
+      while (isWhitespaceChar(text.charAt(index+1)) || !isWhitespaceChar(text.charAt(index-1))) {
+          index = text.indexOf('@', index+1);
+
+          if (index == -1 || index == text.length()-1) {
+              return -1;
+          }
+      }
+
+      return index;
+  }
+
+  private void parseBlock(String text, int startOfBlock, int endOfBlock) {
+      SourcePositionInfo pos = SourcePositionInfo.add(mPosition, mText, startOfBlock);
+      int index = startOfBlock;
+
+      for (char c = text.charAt(index);
+              index < endOfBlock && !isWhitespaceChar(c); c = text.charAt(index++)) {}
+
+      //
+      if (index == startOfBlock+1) {
+          return;
+      }
+
+      int endOfFirstPart = index-1;
+      if (index == endOfBlock) {
+          // TODO - should value be null or ""
+          tag(text.substring(startOfBlock,
+                  findEndOfMainOrBlock(text, startOfBlock, index)), "", false, pos);
+          return;
+      }
+
+
+      // get to beginning of tag value
+      while (index < endOfBlock && isWhitespaceChar(text.charAt(index++))) {}
+      int startOfSecondPart = index-1;
+
+      tag(text.substring(startOfBlock, endOfFirstPart),
+              text.substring(startOfSecondPart, endOfBlock), false, pos);
+  }
+
+  private boolean isWhitespaceChar(char c) {
+      return c == ' ' || c == '\r' || c == '\t' || c == '\n';
   }
 
   private void tag(String name, String text, boolean isInline, SourcePositionInfo pos) {
@@ -311,8 +501,8 @@ public class Comment {
 
     // Don't bother parsing text if we aren't generating documentation.
     if (Doclava.parseComments()) {
-      parseRegex(mText);
-      parseBriefTags();
+        parseCommentTags(mText);
+        parseBriefTags();
     } else {
       // Forces methods to be recognized by findOverriddenMethods in MethodInfo.
       mInlineTagsList.add(new TextTagInfo("Text", "Text", mText,

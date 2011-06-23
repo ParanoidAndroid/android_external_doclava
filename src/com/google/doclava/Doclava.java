@@ -117,6 +117,7 @@ public class Doclava {
   }
 
   public static boolean start(RootDoc r) {
+    long startTime = System.nanoTime();
     String keepListFile = null;
     String proofreadFile = null;
     String todoFile = null;
@@ -233,6 +234,8 @@ public class Doclava {
 
       templates = ClearPage.getBundledTemplateDirs();
       for (String tmpl : templates) {
+          // TODO - remove commented line - it's here for debugging purposes
+        //  resourceLoaders.add(new FileSystemResourceLoader("/Volumes/Android/master/external/doclava/res/" + tmpl));
         resourceLoaders.add(new ClassResourceLoader(Doclava.class, '/'+tmpl));
       }
 
@@ -243,7 +246,7 @@ public class Doclava {
         return false;
       }
 
-      long startTime = System.nanoTime();
+      //startTime = System.nanoTime();
 
       // Apply @since tags from the XML file
       sinceTagger.tagAll(Converter.rootClasses());
@@ -297,10 +300,6 @@ public class Doclava {
       if (sdkValuePath != null) {
         writeSdkValues(sdkValuePath);
       }
-
-      long time = System.nanoTime() - startTime;
-      System.out.println("DroidDoc took " + (time / 1000000000) + " sec. to write docs to "
-          + ClearPage.outputDir);
     }
 
     // Stubs
@@ -309,6 +308,10 @@ public class Doclava {
     }
 
     Errors.printErrors();
+
+    long time = System.nanoTime() - startTime;
+    System.out.println("DroidDoc took " + (time / 1000000000) + " sec. to write docs to "
+        + ClearPage.outputDir);
 
     return !Errors.hadError;
   }

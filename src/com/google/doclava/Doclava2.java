@@ -27,10 +27,10 @@ public class Doclava2 {
             ArrayList<String> files = new ArrayList<String>();
             files.add("frameworks/base/core/java/android/preference/VolumePreference.java");
             files.add("frameworks/base/core/java/android/preference/SeekBarDialogPreference.java");
-//            files.add("frameworks/base/core/java/android/view/ViewGroup.java");
-//            files.add("frameworks/base/core/java/android/widget/FrameLayout.java");
-//            files.add("frameworks/base/core/java/android/widget/DatePicker.java");
-//            files.add("frameworks/base/core/java/android/widget/GridLayout.java");
+            files.add("frameworks/base/core/java/android/view/ViewGroup.java");
+            files.add("frameworks/base/core/java/android/widget/FrameLayout.java");
+            files.add("frameworks/base/core/java/android/widget/DatePicker.java");
+            files.add("frameworks/base/core/java/android/widget/GridLayout.java");
 
             for (String filename : files) {
                 InfoBuilder infoBuilder = new InfoBuilder(filename);
