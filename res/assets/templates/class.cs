@@ -546,13 +546,9 @@ From <?cs var:cl.kind ?>
 <?cs each:attr=attrs ?>
 <?cs # the A tag in the next line must remain where it is, so that Eclipse can parse the docs ?>
 <A NAME="<?cs var:attr.anchor ?>"></A>
-<?cs # The apilevel-N class MUST BE LAST in the sequence of class names ?>
-<div class="jd-details api apilevel-<?cs var:attr.since ?>"> 
+<div class="jd-details"> 
     <h4 class="jd-details-title"><?cs var:attr.name ?>
     </h4>
-      <div class="api-level">
-        <?cs call:since_tags(attr) ?>
-      </div>
     <div class="jd-details-descr">
         <?cs call:description(attr) ?>
 
