@@ -130,7 +130,7 @@ public class DocFile {
       } else if (outfile.indexOf("guide/") != -1) {
         hdf.setValue("guide", "true");
         ClearPage.write(hdf, "docpage.cs", outfile);
-      } else if (outfile.indexOf("resources/") != -1) {
+      } else if ((outfile.indexOf("resources/") != -1) || (outfile.indexOf("training/") != -1)) {
         hdf.setValue("resources", "true");
         ClearPage.write(hdf, "docpage.cs", outfile);
       } else {
