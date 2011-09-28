@@ -20,11 +20,11 @@ import com.google.clearsilver.jsilver.data.Data;
 import com.google.doclava.apicheck.ApiCheck;
 import com.google.doclava.apicheck.ApiInfo;
 import com.google.doclava.apicheck.ApiParseException;
-
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +64,10 @@ public class SinceTagger {
       try {
         specApi = new ApiCheck().parseApi(xmlFile);
       } catch (ApiParseException e) {
-        Errors.error(Errors.NO_SINCE_DATA, null, "Could not add since data for " + versionName);
+        StringWriter stackTraceWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stackTraceWriter));
+        Errors.error(Errors.BROKEN_SINCE_FILE, null, "Failed to parse " + xmlFile
+                + " for " + versionName + " since data.\n" + stackTraceWriter.toString());
         continue;
       }
 
