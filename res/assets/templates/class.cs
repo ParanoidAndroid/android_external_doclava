@@ -2,7 +2,7 @@
 <?cs include:"macros.cs" ?>
 <html>
 <?cs include:"head_tag.cs" ?>
-<body class="<?cs var:class.since ?>">
+<body class="<?cs var:class.since ?>" itemscope itemtype="http://schema.org/Article">
 <?cs include:"header.cs" ?>
 
 <div class="g-unit" id="doc-content">
@@ -98,7 +98,7 @@ Summary:
     <?cs var:class.final ?> 
     <?cs var:class.abstract ?>
     <?cs var:class.kind ?>
-<h1><?cs var:class.name ?></h1>
+<h1 itemprop="name"><?cs var:class.name ?></h1>
 
 <?cs set:colspan = subcount(class.inheritance) ?>
 <?cs each:supr = class.inheritance ?>
@@ -157,7 +157,7 @@ Summary:
 <?cs call:deprecated_warning(class) ?>
 <?cs if:subcount(class.descr) ?>
 <h2>Class Overview</h2>
-<p><?cs call:tag_list(class.descr) ?></p>
+<p itemprop="articleBody"><?cs call:tag_list(class.descr) ?></p>
 <?cs /if ?>
 
 <?cs call:see_also_tags(class.seeAlso) ?>
