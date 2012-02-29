@@ -324,7 +324,7 @@ public class Stubs {
   }
 
   static void writeClass(PrintStream stream, HashSet<ClassInfo> notStrippable, ClassInfo cl) {
-    writeAnnotations(stream, cl.annotations());
+    writeAnnotations(stream, cl.annotations(), cl.isDeprecated());
 
     stream.print(cl.scope() + " ");
     if (cl.isAbstract() && !cl.isAnnotation() && !cl.isInterface()) {
@@ -498,6 +498,8 @@ public class Stubs {
   static void writeMethod(PrintStream stream, MethodInfo method, boolean isConstructor) {
     String comma;
 
+    writeAnnotations(stream, method.annotations(), method.isDeprecated());
+
     stream.print(method.scope() + " ");
     if (method.isStatic()) {
       stream.print("static ");
@@ -560,6 +562,8 @@ public class Stubs {
   }
 
   static void writeField(PrintStream stream, FieldInfo field) {
+    writeAnnotations(stream, field.annotations(), field.isDeprecated());
+
     stream.print(field.scope() + " ");
     if (field.isStatic()) {
       stream.print("static ");
@@ -712,11 +716,34 @@ public class Stubs {
     }
   }
 
-  static void writeAnnotations(PrintStream stream, ArrayList<AnnotationInstanceInfo> annotations) {
+    /**
+     * Write out the given list of annotations. If the {@code isDeprecated}
+     * flag is true also write out a {@code @Deprecated} annotation if it did not
+     * already appear in the list of annotations. (This covers APIs that mention
+     * {@code @deprecated} in their documentation but fail to add
+     * {@code @Deprecated} as an annotation.
+     * <p>
+     * {@code @Override} annotations are deliberately skipped.
+     */
+  static void writeAnnotations(PrintStream stream, List<AnnotationInstanceInfo> annotations,
+          boolean isDeprecated) {
+    assert annotations != null;
     for (AnnotationInstanceInfo ann : annotations) {
+      // Skip @Override annotations: the stubs do not need it and in some cases it leads
+      // to compilation errors with the way the stubs are generated
+      if (ann.type() != null && ann.type().qualifiedName().equals("java.lang.Override")) {
+        continue;
+      }
       if (!ann.type().isHidden()) {
         stream.println(ann.toString());
+        if (isDeprecated && ann.type() != null
+            && ann.type().qualifiedName().equals("java.lang.Deprecated")) {
+          isDeprecated = false; // Prevent duplicate annotations
+        }
       }
+    }
+    if (isDeprecated) {
+      stream.println("@Deprecated");
     }
   }
 
