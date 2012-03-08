@@ -133,6 +133,9 @@ public class DocFile {
       } else if ((outfile.indexOf("resources/") != -1) || (outfile.indexOf("training/") != -1)) {
         hdf.setValue("resources", "true");
         ClearPage.write(hdf, "docpage.cs", outfile);
+      } else if (outfile.indexOf("design/") != -1) {
+        hdf.setValue("design", "true");
+        ClearPage.write(hdf, "designpage.cs", outfile);
       } else {
         ClearPage.write(hdf, "nosidenavpage.cs", outfile);
       }
