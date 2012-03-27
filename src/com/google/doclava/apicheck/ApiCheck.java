@@ -123,6 +123,7 @@ public class ApiCheck {
 
   public static ApiInfo parseApi(String filename) throws ApiParseException {
     InputStream stream = null;
+    Throwable textParsingError = null;
     // try it as our format
     try {
       stream = new FileInputStream(filename);
@@ -132,9 +133,8 @@ public class ApiCheck {
     try {
       return ApiFile.parseApi(filename, stream);
     } catch (ApiParseException ignored) {
+      textParsingError = ignored;
       if (false) {
-        System.out.println("stopping for file: " + filename);
-        ignored.printStackTrace();
         return null;
       }
     } finally {
@@ -150,11 +150,21 @@ public class ApiCheck {
     }
     try {
       return XmlApiFile.parseApi(stream);
+    } catch (ApiParseException ignored) {
+        System.out.println("Couldn't parse API file \"" + filename + "\"");
+        System.out.println("  ...as text: " + textParsingError.toString());
+        System.out.println("  ...as XML:  " + ignored.toString());
+        if (false) {
+          if (textParsingError != null) textParsingError.printStackTrace();
+          ignored.printStackTrace();
+          return null;
+        }
     } finally {
       try {
         stream.close();
       } catch (IOException ignored) {}
     }
+    return null;
   }
 
   public ApiInfo parseApi(URL url) throws ApiParseException {
