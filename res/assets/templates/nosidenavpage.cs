@@ -2,7 +2,7 @@
 <?cs include:"macros.cs" ?>
 <html>
 <?cs include:"head_tag.cs" ?>
-<body class="gc-documentation">
+<body class="gc-documentation" itemscope itemtype="http://schema.org/Article">
 <a name="top"></a>
 <?cs call:custom_masthead() ?>
 
