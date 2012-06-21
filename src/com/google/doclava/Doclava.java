@@ -210,11 +210,15 @@ public class Doclava {
         try {
           String name = a[1];
           URL federationURL = new URL(a[2]);
-          federationTagger.addSite(name, federationURL);
+          federationTagger.addSiteUrl(name, federationURL);
         } catch (MalformedURLException e) {
           System.err.println("Could not parse URL for federation: " + a[1]);
           return false;
         }
+      } else if (a[0].equals("-federationapi")) {
+        String name = a[1];
+        String file = a[2];
+        federationTagger.addSiteApi(name, file);
       }
     }
 
@@ -530,6 +534,9 @@ public class Doclava {
       return 1;
     }
     if (option.equals("-federate")) {
+      return 3;
+    }
+    if (option.equals("-federationapi")) {
       return 3;
     }
     return 0;

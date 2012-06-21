@@ -26,6 +26,8 @@ import java.util.ArrayList;
  */
 public class LinkReference {
 
+  private static final boolean DBG = false;
+
   /** The original text. */
   public String text;
 
@@ -296,7 +298,7 @@ public class LinkReference {
     }
 
     // debugging spew
-    if (false) {
+    if (DBG) {
       result.label = result.label + "/" + ref + "/" + mem + '/';
       if (params != null) {
         for (int i = 0; i < params.length; i++) {
@@ -322,6 +324,7 @@ public class LinkReference {
       method = (MethodInfo) result.memberInfo;
     }
 
+    if (DBG) System.out.println("----- label = " + result.label + ", text = '" + text + "'");
     if (text.startsWith("\"")) {
       // literal quoted reference (e.g., a book title)
       Matcher matcher = QUOTE_PATTERN.matcher(text);
@@ -333,6 +336,7 @@ public class LinkReference {
       skipHref = true;
       result.label = matcher.group(1);
       result.kind = "@seeJustLabel";
+      if (DBG) System.out.println(" ---- literal quoted reference");
     } else if (text.startsWith("<")) {
       // explicit "<a href" form
       Matcher matcher = HREF_PATTERN.matcher(text);
@@ -344,18 +348,21 @@ public class LinkReference {
       result.href = matcher.group(1);
       result.label = matcher.group(2);
       result.kind = "@seeHref";
+      if (DBG) System.out.println(" ---- explicit href reference");
     } else if (result.packageInfo != null) {
       result.href = result.packageInfo.htmlPage();
       if (result.label.length() == 0) {
         result.href = result.packageInfo.htmlPage();
         result.label = result.packageInfo.name();
       }
+      if (DBG) System.out.println(" ---- packge reference");
     } else if (result.classInfo != null && result.referencedMemberName == null) {
       // class reference
       if (result.label.length() == 0) {
         result.label = result.classInfo.name();
       }
       result.href = result.classInfo.htmlPage();
+      if (DBG) System.out.println(" ---- class reference");
     } else if (result.memberInfo != null) {
       // member reference
       ClassInfo containing = result.memberInfo.containingClass();
@@ -368,7 +375,9 @@ public class LinkReference {
         result.label = result.referencedMemberName;
       }
       result.href = containing.htmlPage() + '#' + result.memberInfo.anchor();
+      if (DBG) System.out.println(" ---- member reference");
     }
+    if (DBG) System.out.println("  --- href = '" + result.href + "'");
 
     if (result.href == null && !skipHref) {
       if (printOnErrors && (base == null || base.checkLevel())) {

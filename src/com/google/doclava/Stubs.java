@@ -1429,7 +1429,7 @@ public class Stubs {
   }
 
   static String getCleanTypeName(TypeInfo t) {
-      return t.isPrimitive() ? t.simpleTypeName() : to$Class(t.asClassInfo().qualifiedName()
-              + t.dimension());
+      return t.isPrimitive() ? t.simpleTypeName() :
+              to$Class(t.asClassInfo().qualifiedName() + t.dimension());
   }
 }
