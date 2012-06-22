@@ -119,6 +119,7 @@ public class Doclava {
   public static boolean start(RootDoc r) {
     long startTime = System.nanoTime();
     String keepListFile = null;
+    String proguardFile = null;
     String proofreadFile = null;
     String todoFile = null;
     String sdkValuePath = null;
@@ -170,6 +171,8 @@ public class Doclava {
         }
       } else if (a[0].equals("-keeplist")) {
         keepListFile = a[1];
+      } else if (a[0].equals("-proguard")) {
+          proguardFile = a[1];
       } else if (a[0].equals("-proofread")) {
         proofreadFile = a[1];
       } else if (a[0].equals("-todo")) {
@@ -303,8 +306,8 @@ public class Doclava {
     }
 
     // Stubs
-    if (stubsDir != null || apiFile != null) {
-      Stubs.writeStubsAndApi(stubsDir, apiFile, stubPackages);
+    if (stubsDir != null || apiFile != null || proguardFile != null) {
+      Stubs.writeStubsAndApi(stubsDir, apiFile, proguardFile, stubPackages);
     }
 
     Errors.printErrors();
@@ -476,6 +479,9 @@ public class Doclava {
       return 2;
     }
     if (option.equals("-keeplist")) {
+      return 2;
+    }
+    if (option.equals("-proguard")) {
       return 2;
     }
     if (option.equals("-proofread")) {
