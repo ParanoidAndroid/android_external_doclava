@@ -120,24 +120,37 @@ public class DocFile {
       // for custom left nav based on tab etc.
       ClearPage.write(hdf, "docpage.cs", outfile);
     } else {
-      if (outfile.indexOf("sdk/") != -1) {
-        hdf.setValue("sdk", "true");
-        if ((outfile.indexOf("index.html") != -1) && (outfile.indexOf("preview/") == -1)) {
-          ClearPage.write(hdf, "sdkpage.cs", outfile);
-        } else {
-          ClearPage.write(hdf, "docpage.cs", outfile);
-        }
-      } else if (outfile.indexOf("guide/") != -1) {
-        hdf.setValue("guide", "true");
-        ClearPage.write(hdf, "docpage.cs", outfile);
-      } else if ((outfile.indexOf("resources/") != -1) || (outfile.indexOf("training/") != -1)) {
-        hdf.setValue("resources", "true");
-        ClearPage.write(hdf, "docpage.cs", outfile);
-      } else if (outfile.indexOf("design/") != -1) {
+      String filename = outfile;
+      // Check whether this is a localized page and remove the intl/*/ path from filename
+      if (filename.indexOf("intl/") == 0) {
+        filename = filename.substring(filename.indexOf("/", 5) + 1); // After intl/ to get 2nd /
+      }
+      if (filename.indexOf("design/") == 0) {
         hdf.setValue("design", "true");
-        ClearPage.write(hdf, "designpage.cs", outfile);
+      } else if (filename.indexOf("develop/") == 0) {
+        hdf.setValue("develop", "true");
+      } else if (filename.indexOf("guide/") == 0) {
+        hdf.setValue("guide", "true");
+      } else if (filename.indexOf("training/") == 0) {
+        hdf.setValue("training", "true");
+      } else if (filename.indexOf("more/") == 0) {
+        hdf.setValue("more", "true");
+      } else if (filename.indexOf("google/") == 0) {
+        hdf.setValue("google", "true");
+      } else if (filename.indexOf("distribute/") == 0) {
+        hdf.setValue("distribute", "true");
+      } else if (filename.indexOf("about/") == 0) {
+        hdf.setValue("about", "true");
+      } else if ((filename.indexOf("tools/") == 0) || (filename.indexOf("sdk/") == 0)) {
+        hdf.setValue("tools", "true");
+      }
+
+      if ((filename.indexOf("tools/sdk/preview/index.html") == 0) ||
+          (filename.indexOf("sdk/index.html") == 0) ||
+          (filename.indexOf("tools/sdk/ndk/index.html") == 0)) {
+        ClearPage.write(hdf, "sdkpage.cs", outfile);
       } else {
-        ClearPage.write(hdf, "nosidenavpage.cs", outfile);
+        ClearPage.write(hdf, "docpage.cs", outfile);
       }
     }
   } // writePage

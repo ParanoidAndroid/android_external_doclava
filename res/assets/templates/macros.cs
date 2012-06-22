@@ -139,7 +139,7 @@ def:see_also_tags(also) ?><?cs
 <?cs # print the API Level ?><?cs
 def:since_tags(obj) ?>
 <?cs if:reference.apilevels && obj.since ?>
-  Since: <a href="<?cs var:toroot ?>guide/appendix/api-levels.html#level<?cs var:obj.since ?>">API Level <?cs var:obj.since ?></a>
+  Since: <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API Level <?cs var:obj.since ?></a>
 <?cs /if ?>
 <?cs /def ?>
 <?cs def:federated_refs(obj) ?>
