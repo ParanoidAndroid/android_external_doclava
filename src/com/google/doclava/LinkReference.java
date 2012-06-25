@@ -26,7 +26,7 @@ import java.util.ArrayList;
  */
 public class LinkReference {
 
-  private static final boolean DBG = false;
+  private static final boolean DBG = true;
 
   /** The original text. */
   public String text;
@@ -39,6 +39,9 @@ public class LinkReference {
 
   /** The link. */
   public String href;
+
+  /** Non-null for federated links */
+  public String federatedSite;
 
   /** The {@link PackageInfo} if any. */
   public PackageInfo packageInfo;
@@ -234,30 +237,50 @@ public class LinkReference {
     ClassInfo cl = null;
     if (base instanceof ClassInfo) {
       cl = (ClassInfo) base;
+      if (DBG) System.out.println("-- chose base as classinfo");
     }
 
     if (ref == null) {
+      if (DBG) System.out.println("-- ref == null");
       // no class or package was provided, assume it's this class
       if (cl != null) {
+        if (DBG) System.out.println("-- assumed to be cl");
         result.classInfo = cl;
       }
     } else {
+      if (DBG) System.out.println("-- they provided ref = " + ref);
       // they provided something, maybe it's a class or a package
       if (cl != null) {
+        if (DBG) System.out.println("-- cl non-null");
         result.classInfo = cl.extendedFindClass(ref);
         if (result.classInfo == null) {
+          if (DBG) System.out.println("-- cl.extendedFindClass was null");
           result.classInfo = cl.findClass(ref);
         }
         if (result.classInfo == null) {
+          if (DBG) System.out.println("-- cl.findClass was null");
           result.classInfo = cl.findInnerClass(ref);
+          if (DBG) if (result.classInfo == null) System.out.println("-- cl.findInnerClass was null");
         }
       }
       if (result.classInfo == null) {
+        if (DBG) System.out.println("-- hitting up the Converter.obtainclass");
         result.classInfo = Converter.obtainClass(ref);
       }
       if (result.classInfo == null) {
+        if (DBG) System.out.println("-- Converter.obtainClass was null");
         result.packageInfo = Converter.obtainPackage(ref);
       }
+    }
+
+    if (result.classInfo == null) {
+        if (DBG) System.out.println("-- NO CLASS INFO");
+    } else {
+        Doclava.federationTagger.tag(result.classInfo);
+        for (FederatedSite site : result.classInfo.getFederatedReferences()) {
+            System.out.println("-- reg link = " + result.classInfo.htmlPage());
+            System.out.println("-- fed link = " + site.linkFor(result.classInfo.htmlPage()));
+        }
     }
 
     if (result.classInfo != null && mem != null) {
@@ -298,7 +321,7 @@ public class LinkReference {
     }
 
     // debugging spew
-    if (DBG) {
+    if (false) {
       result.label = result.label + "/" + ref + "/" + mem + '/';
       if (params != null) {
         for (int i = 0; i < params.length; i++) {
@@ -361,7 +384,7 @@ public class LinkReference {
       if (result.label.length() == 0) {
         result.label = result.classInfo.name();
       }
-      result.href = result.classInfo.htmlPage();
+      setHref(result, result.classInfo, null);
       if (DBG) System.out.println(" ---- class reference");
     } else if (result.memberInfo != null) {
       // member reference
@@ -374,7 +397,7 @@ public class LinkReference {
       if (result.label.length() == 0) {
         result.label = result.referencedMemberName;
       }
-      result.href = containing.htmlPage() + '#' + result.memberInfo.anchor();
+      setHref(result, containing, result.memberInfo.anchor());
       if (DBG) System.out.println(" ---- member reference");
     }
     if (DBG) System.out.println("  --- href = '" + result.href + "'");
@@ -432,6 +455,22 @@ public class LinkReference {
       this.label = "";
     }
     this.label = "ERROR(" + this.label + "/" + text.trim() + ")";
+  }
+
+  static private void setHref(LinkReference reference, ClassInfo info, String member) {
+    String htmlPage = info.htmlPage();
+    if (member != null) {
+      htmlPage = htmlPage + "#" + member;
+    }
+
+    Doclava.federationTagger.tag(info);
+    if (!info.getFederatedReferences().isEmpty()) {
+      FederatedSite site = info.getFederatedReferences().iterator().next();
+      reference.href = site.linkFor(htmlPage);
+      reference.federatedSite = site.name();
+    } else {
+      reference.href = htmlPage;
+    }
   }
 
   /** private. **/

@@ -219,7 +219,7 @@ public class TypeInfo implements Resolvable {
         data.setValue(base + ".link", mClass.htmlPage());
         data.setValue(base + ".since", mClass.getSince());
       } else {
-        Doclava.federationTagger.tagAll(new ClassInfo[] {mClass});
+        Doclava.federationTagger.tag(mClass);
         if (!mClass.getFederatedReferences().isEmpty()) {
           FederatedSite site = mClass.getFederatedReferences().iterator().next();
           data.setValue(base + ".link", site.linkFor(mClass.htmlPage()));

@@ -45,6 +45,13 @@ public final class FederationTagger {
     federatedXmls.put(name, file);
   }
   
+  public void tag(ClassInfo classDoc) {
+    initialize();
+    for (FederatedSite site : federatedSites) {
+      applyFederation(site, new ClassInfo[] { classDoc });
+    }
+  }
+
   public void tagAll(ClassInfo[] classDocs) {
     initialize();
     for (FederatedSite site : federatedSites) {
