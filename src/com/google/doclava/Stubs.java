@@ -80,7 +80,8 @@ public class Stubs {
             TypeInfo t = p.type();
             if (!t.isPrimitive()) {
               if (t.asClassInfo().isHidden()) {
-                Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Parameter of hidden type "
+//                Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Parameter of hidden type "
+                System.out.println( m.position() + "Parameter of hidden type "
                     + t.fullName() + " in " + cl.qualifiedName() + "." + m.name() + "()");
               }
             }
@@ -209,7 +210,8 @@ public class Stubs {
             cl.allConstructors(), cl.allSelfMethods(), cl.annotationElements(), cl.allSelfFields(),
             cl.enumConstants(), cl.containingPackage(), cl.containingClass(), null, null, cl
                 .annotations());
-        Errors.error(Errors.HIDDEN_SUPERCLASS, cl.position(), "Public class " + cl.qualifiedName()
+//        Errors.error(Errors.HIDDEN_SUPERCLASS, cl.position(), "Public class " + cl.qualifiedName()
+        System.out.println( cl.position() + "Public class " + cl.qualifiedName()
             + " stripped of unavailable superclass " + supr.qualifiedName());
       } else {
         cantStripThis(supr, notStrippable, "6:" + cl.realSuperclass().name() + cl.qualifiedName());
@@ -240,8 +242,9 @@ public class Stubs {
                   if (tInfoType.asClassInfo() != null) {
                     ClassInfo tcl = tInfoType.asClassInfo();
                     if (tcl.isHidden()) {
-                      Errors
-                          .error(Errors.UNAVAILABLE_SYMBOL, mInfo.position(),
+//                      Errors
+//                          .error(Errors.UNAVAILABLE_SYMBOL, mInfo.position(),
+                      System.out.println( mInfo.position() +
                               "Parameter of hidden type " + tInfoType.fullName() + " in "
                                   + mInfo.containingClass().qualifiedName() + '.' + mInfo.name()
                                   + "()");
