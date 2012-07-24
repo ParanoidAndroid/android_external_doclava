@@ -1365,8 +1365,7 @@ public class Stubs {
       if (pi != params.get(0)) {
         keepListWriter.print(", ");
       }
-      keepListWriter.print(fullParameterTypeNameNoGenerics(method, pi.type(),
-          pi == params.get(params.size() - 1)));
+      keepListWriter.print(getCleanTypeName(pi.type()));
     }
 
     keepListWriter.print(")");
@@ -1403,15 +1402,6 @@ public class Stubs {
       fullTypeName = type.fullNameNoDimension(method.typeVariables()) + "...";
     }
     return fullTypeName;
-  }
-
-  static String fullParameterTypeNameNoGenerics(MethodInfo method, TypeInfo type, boolean isLast) {
-    if (isLast && method.isVarArgs()) {
-      // ProGuard doesn't properly handle varargs, so instead use the argument catchall
-      return "...";
-    } else {
-      return getCleanTypeName(type);
-    }
   }
 
   static String to$Class(String name) {
