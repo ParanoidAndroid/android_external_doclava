@@ -1406,14 +1406,12 @@ public class Stubs {
   }
 
   static String fullParameterTypeNameNoGenerics(MethodInfo method, TypeInfo type, boolean isLast) {
-    String fullTypeName = getCleanTypeName(type);
     if (isLast && method.isVarArgs()) {
-      // TODO: note that this does not attempt to handle hypothetical
-      // vararg methods whose last parameter is a list of arrays, e.g.
-      // "Object[]...".
-      fullTypeName = type.fullNameNoDimension(method.typeVariables()) + "...";
+      // ProGuard doesn't properly handle varargs, so instead use the argument catchall
+      return "...";
+    } else {
+      return getCleanTypeName(type);
     }
-    return fullTypeName;
   }
 
   static String to$Class(String name) {
@@ -1429,7 +1427,7 @@ public class Stubs {
   }
 
   static String getCleanTypeName(TypeInfo t) {
-      return t.isPrimitive() ? t.simpleTypeName() :
+      return t.isPrimitive() ? t.simpleTypeName() + t.dimension() :
               to$Class(t.asClassInfo().qualifiedName() + t.dimension());
   }
 }
