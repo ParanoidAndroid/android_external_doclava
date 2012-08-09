@@ -76,6 +76,7 @@ public class Doclava {
   public static FederationTagger federationTagger = new FederationTagger();
   private static boolean generateDocs = true;
   private static boolean parseComments = false;
+  private static String yamlNavFile = null;
 
   public static JSilver jSilver = null;
 
@@ -219,6 +220,8 @@ public class Doclava {
         String name = a[1];
         String file = a[2];
         federationTagger.addSiteApi(name, file);
+      } else if (a[0].equals("-yaml")) {
+        yamlNavFile = a[1];
       }
     }
 
@@ -278,6 +281,11 @@ public class Doclava {
 
       // Navigation tree
       NavTree.writeNavTree(javadocDir);
+
+      // Write yaml tree.
+      if (yamlNavFile != null){
+        NavTree.writeYamlTree(javadocDir, yamlNavFile);
+      }
 
       // Packages Pages
       writePackages(javadocDir + "packages" + htmlExtension);
@@ -538,6 +546,9 @@ public class Doclava {
     }
     if (option.equals("-federationapi")) {
       return 3;
+    }
+    if (option.equals("-yaml")) {
+      return 2;
     }
     return 0;
   }
@@ -1451,5 +1462,12 @@ public class Doclava {
     }
 
     return TYPE_NONE;
+  }
+
+  /**
+   * Ensures a trailing '/' at the end of a string.
+   */
+  static String ensureSlash(String path) {
+    return path.endsWith("/") ? path : path + "/";
   }
 }
