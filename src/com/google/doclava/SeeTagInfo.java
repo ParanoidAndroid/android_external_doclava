@@ -54,18 +54,15 @@ public class SeeTagInfo extends TagInfo {
     data.setValue(base + ".label", linkRef.label);
     if (linkRef.href != null) {
       data.setValue(base + ".href", linkRef.href);
-//      data.setValue(base + ".link", linkRef.href);
     }
 
-    // JHAM
-    System.out.println("##### base = " + base + ", toroot = " + ClearPage.toroot + ", kind = " + kind());
     if (ClearPage.toroot != null) {
       data.setValue("toroot", ClearPage.toroot);
     }
+
     if (linkRef.federatedSite != null) {
       data.setValue("federated", linkRef.federatedSite);
     }
-    // /JHAM
   }
 
   public boolean checkLevel() {

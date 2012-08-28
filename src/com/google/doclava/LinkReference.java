@@ -26,7 +26,7 @@ import java.util.ArrayList;
  */
 public class LinkReference {
 
-  private static final boolean DBG = true;
+  private static final boolean DBG = false;
 
   /** The original text. */
   public String text;
@@ -278,8 +278,9 @@ public class LinkReference {
     } else {
         Doclava.federationTagger.tag(result.classInfo);
         for (FederatedSite site : result.classInfo.getFederatedReferences()) {
-            System.out.println("-- reg link = " + result.classInfo.htmlPage());
-            System.out.println("-- fed link = " + site.linkFor(result.classInfo.htmlPage()));
+          if (DBG) System.out.println("-- reg link = " + result.classInfo.htmlPage());
+          if (DBG) System.out.println("-- fed link = " +
+              site.linkFor(result.classInfo.htmlPage()));
         }
     }
 
