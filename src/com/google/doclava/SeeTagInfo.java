@@ -55,6 +55,14 @@ public class SeeTagInfo extends TagInfo {
     if (linkRef.href != null) {
       data.setValue(base + ".href", linkRef.href);
     }
+
+    if (ClearPage.toroot != null) {
+      data.setValue("toroot", ClearPage.toroot);
+    }
+
+    if (linkRef.federatedSite != null) {
+      data.setValue("federated", linkRef.federatedSite);
+    }
   }
 
   public boolean checkLevel() {

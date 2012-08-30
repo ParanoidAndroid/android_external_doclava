@@ -1365,8 +1365,7 @@ public class Stubs {
       if (pi != params.get(0)) {
         keepListWriter.print(", ");
       }
-      keepListWriter.print(fullParameterTypeNameNoGenerics(method, pi.type(),
-          pi == params.get(params.size() - 1)));
+      keepListWriter.print(getCleanTypeName(pi.type()));
     }
 
     keepListWriter.print(")");
@@ -1405,17 +1404,6 @@ public class Stubs {
     return fullTypeName;
   }
 
-  static String fullParameterTypeNameNoGenerics(MethodInfo method, TypeInfo type, boolean isLast) {
-    String fullTypeName = getCleanTypeName(type);
-    if (isLast && method.isVarArgs()) {
-      // TODO: note that this does not attempt to handle hypothetical
-      // vararg methods whose last parameter is a list of arrays, e.g.
-      // "Object[]...".
-      fullTypeName = type.fullNameNoDimension(method.typeVariables()) + "...";
-    }
-    return fullTypeName;
-  }
-
   static String to$Class(String name) {
     int pos = 0;
     while ((pos = name.indexOf('.', pos)) > 0) {
@@ -1429,7 +1417,7 @@ public class Stubs {
   }
 
   static String getCleanTypeName(TypeInfo t) {
-      return t.isPrimitive() ? t.simpleTypeName() : to$Class(t.asClassInfo().qualifiedName()
-              + t.dimension());
+      return t.isPrimitive() ? t.simpleTypeName() + t.dimension() :
+              to$Class(t.asClassInfo().qualifiedName() + t.dimension());
   }
 }

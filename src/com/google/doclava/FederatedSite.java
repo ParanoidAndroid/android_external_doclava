@@ -45,6 +45,16 @@ public final class FederatedSite {
     }
   }
   
+  /**
+   * Constructs a federated site using an api file not contained on
+   * the site itself.
+   */
+  public FederatedSite(String name, URL baseUrl, String api) throws ApiParseException {
+    this.name = name;
+    this.baseUrl = baseUrl;
+    this.apiInfo = new ApiCheck().parseApi(api);
+  }
+
   public String linkFor(String htmlPage) {
     return baseUrl + "/" + htmlPage;
   }

@@ -16,14 +16,12 @@
 
 package com.google.doclava;
 
-import com.google.doclava.apicheck.ApiCheck;
-import com.google.doclava.apicheck.ApiInfo;
 import com.google.doclava.apicheck.ApiParseException;
-
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Cross-references documentation among different libraries. A FederationTagger
@@ -31,28 +29,65 @@ import java.util.List;
  * against when overlapping content is discovered.
  */
 public final class FederationTagger {
+  private final Map<String, URL> federatedUrls = new HashMap<String, URL>();
+  private final Map<String, String> federatedXmls = new HashMap<String, String>();
   private final List<FederatedSite> federatedSites = new ArrayList<FederatedSite>();
-  
+  private boolean initialized = false;
   /**
    * Adds a Doclava documentation site for federation. Accepts the base URL of
    * the remote API.
    */
-  public void addSite(String name, URL site) {
-    try {
-      federatedSites.add(new FederatedSite(name, site));
-    } catch (ApiParseException e) {
-      String error = "Could not add site for federation: " + site;
-      if (e.getMessage() != null) {
-        error += ": " + e.getMessage();
-      }
-      Errors.error(Errors.NO_FEDERATION_DATA, null, error);
-    }
+  public void addSiteUrl(String name, URL site) {
+    federatedUrls.put(name, site);
   }
   
+  public void addSiteApi(String name, String file) {
+    federatedXmls.put(name, file);
+  }
+  
+  public void tag(ClassInfo classDoc) {
+    initialize();
+    for (FederatedSite site : federatedSites) {
+      applyFederation(site, new ClassInfo[] { classDoc });
+    }
+  }
+
   public void tagAll(ClassInfo[] classDocs) {
+    initialize();
     for (FederatedSite site : federatedSites) {
       applyFederation(site, classDocs);
     }
+  }
+  
+  private void initialize() {
+    if (initialized) {
+      return;
+    }
+    
+    for (String name : federatedXmls.keySet()) {
+      if (!federatedUrls.containsKey(name)) {
+        Errors.error(Errors.NO_FEDERATION_DATA, null, "Unknown documentation site for " + name);
+      }
+    }
+    
+    for (String name : federatedUrls.keySet()) {
+      try {
+        if (federatedXmls.containsKey(name)) {
+          federatedSites.add(new FederatedSite(name, federatedUrls.get(name),
+              federatedXmls.get(name)));
+        } else {
+          federatedSites.add(new FederatedSite(name, federatedUrls.get(name)));
+        }
+      } catch (ApiParseException e) {
+        String error = "Could not add site for federation: " + name;
+        if (e.getMessage() != null) {
+          error += ": " + e.getMessage();
+        }
+        Errors.error(Errors.NO_FEDERATION_DATA, null, error);
+      }
+    }
+    
+    initialized = true;
   }
   
   private void applyFederation(FederatedSite federationSource, ClassInfo[] classDocs) {
