@@ -85,6 +85,14 @@ public abstract class DocInfo {
     return mSince;
   }
   
+  public void setDeprecatedSince(String since) {
+    mDeprecatedSince = since;
+  }
+
+  public String getDeprecatedSince() {
+    return mDeprecatedSince;
+  }
+
   public final void addFederatedReference(FederatedSite source) {
     mFederatedReferences.add(source);
   }
@@ -106,5 +114,6 @@ public abstract class DocInfo {
   Comment mComment;
   SourcePositionInfo mPosition;
   private String mSince;
+  private String mDeprecatedSince;
   private Set<FederatedSite> mFederatedReferences = new LinkedHashSet<FederatedSite>();
 }

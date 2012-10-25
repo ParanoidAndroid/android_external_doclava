@@ -557,6 +557,9 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolv
     TagInfo.makeHDF(data, base + ".deprecated", deprecatedTags());
     TagInfo.makeHDF(data, base + ".seeAlso", seeTags());
     data.setValue(base + ".since", getSince());
+    if (isDeprecated()) {
+      data.setValue(base + ".deprecatedsince", getDeprecatedSince());
+    }
     ParamTagInfo.makeHDF(data, base + ".paramTags", paramTags());
     AttrTagInfo.makeReferenceHDF(data, base + ".attrRefs", comment().attrTags());
     ThrowsTagInfo.makeHDF(data, base + ".throws", throwsTags());

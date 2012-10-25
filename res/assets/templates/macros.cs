@@ -98,15 +98,11 @@ def:tag_list(tags) ?><?cs
   /each ?><?cs
 /def ?>
 
-<?cs # The message about This xxx is deprecated. ?><?cs 
-def:deprecated_text(kind) ?>
-  This <?cs var:kind ?> is deprecated.<?cs 
-/def ?>
-
 <?cs # Show the short-form description of something.  These come from shortDescr and deprecated ?><?cs 
 def:short_descr(obj) ?><?cs
   if:subcount(obj.deprecated) ?>
-      <em><?cs call:deprecated_text(obj.kind) ?>
+      <em>This <?cs var:obj.kind ?> was deprecated
+      in API level <?cs var:obj.deprecatedsince ?>.
       <?cs call:tag_list(obj.deprecated) ?></em><?cs
   else ?><?cs call:tag_list(obj.shortDescr) ?><?cs
   /if ?><?cs
@@ -116,7 +112,8 @@ def:short_descr(obj) ?><?cs
 def:deprecated_warning(obj) ?><?cs 
   if:subcount(obj.deprecated) ?><p>
   <p class="caution">
-      <strong><?cs call:deprecated_text(obj.kind) ?></strong><br/> <?cs 
+      <strong>This <?cs var:obj.kind ?> was deprecated
+      in API level <?cs var:obj.deprecatedsince ?></strong>.<br/> <?cs
       call:tag_list(obj.deprecated) ?>
   </p><?cs 
   /if ?><?cs 
@@ -144,7 +141,7 @@ def:see_also_tags(also) ?><?cs
 <?cs # print the API Level ?><?cs
 def:since_tags(obj) ?>
 <?cs if:reference.apilevels && obj.since ?>
-  Since: <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API Level <?cs var:obj.since ?></a>
+  Added in <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API level <?cs var:obj.since ?></a>
 <?cs /if ?>
 <?cs /def ?>
 <?cs def:federated_refs(obj) ?>
