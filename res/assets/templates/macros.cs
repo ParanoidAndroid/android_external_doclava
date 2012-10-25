@@ -139,11 +139,11 @@ def:see_also_tags(also) ?><?cs
 <?cs /def ?>
 
 <?cs # print the API Level ?><?cs
-def:since_tags(obj) ?>
-<?cs if:reference.apilevels && obj.since ?>
-  Added in <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API level <?cs var:obj.since ?></a>
-<?cs /if ?>
-<?cs /def ?>
+def:since_tags(obj) ?><?cs
+if:reference.apilevels && obj.since ?>
+  Added in <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API level <?cs var:obj.since ?></a><?cs
+/if ?><?cs
+/def ?>
 <?cs def:federated_refs(obj) ?>
   <?cs if:subcount(obj.federated) ?>
     <div>
