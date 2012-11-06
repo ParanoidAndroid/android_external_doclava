@@ -74,6 +74,7 @@ public class Doclava {
   public static SinceTagger sinceTagger = new SinceTagger();
   public static HashSet<String> knownTags = new HashSet<String>();
   public static FederationTagger federationTagger = new FederationTagger();
+  public static Set<String> showAnnotations = new HashSet<String>();
   private static boolean generateDocs = true;
   private static boolean parseComments = false;
   private static String yamlNavFile = null;
@@ -172,8 +173,10 @@ public class Doclava {
         }
       } else if (a[0].equals("-keeplist")) {
         keepListFile = a[1];
+      } else if (a[0].equals("-showAnnotation")) {
+        showAnnotations.add(a[1]);
       } else if (a[0].equals("-proguard")) {
-          proguardFile = a[1];
+        proguardFile = a[1];
       } else if (a[0].equals("-proofread")) {
         proofreadFile = a[1];
       } else if (a[0].equals("-todo")) {
@@ -491,6 +494,9 @@ public class Doclava {
       return 2;
     }
     if (option.equals("-keeplist")) {
+      return 2;
+    }
+    if (option.equals("-showAnnotation")) {
       return 2;
     }
     if (option.equals("-proguard")) {
