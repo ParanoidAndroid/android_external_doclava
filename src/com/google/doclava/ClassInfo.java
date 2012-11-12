@@ -1196,11 +1196,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
         return true;
       }
       if (cl.annotations() != null) {
-          for (AnnotationInstanceInfo info : cl.annotations()) {
-              if (Doclava.showAnnotations.contains(info.type().qualifiedName())) {
-                  return false;
-              }
+        for (AnnotationInstanceInfo info : cl.annotations()) {
+          if (Doclava.showAnnotations.contains(info.type().qualifiedName())) {
+            return false;
           }
+        }
       }
       if (cl.comment().isHidden()) {
         return true;

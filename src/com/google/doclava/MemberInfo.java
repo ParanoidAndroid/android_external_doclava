@@ -42,6 +42,18 @@ public abstract class MemberInfo extends DocInfo implements Comparable, Scoped {
 
   public abstract boolean isExecutable();
 
+  @Override
+  public boolean isHidden() {
+    if (mAnnotations != null) {
+      for (AnnotationInstanceInfo info : mAnnotations) {
+        if (Doclava.showAnnotations.contains(info.type().qualifiedName())) {
+          return false;
+        }
+      }
+    }
+    return super.isHidden();
+  }
+
   public String anchor() {
     if (mSignature != null) {
       return mName + mSignature;
