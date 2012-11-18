@@ -72,7 +72,7 @@ public class Stubs {
 
           ClassInfo returnClass = m.returnType().asClassInfo();
           if (returnClass != null && returnClass.isHidden()) {
-            Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Method " + cl.qualifiedName()
+            System.out.println( m.position() + "Method " + cl.qualifiedName()
                 + "." + m.name() + " returns unavailable type " + returnClass.name());
           }
 
