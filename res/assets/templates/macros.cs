@@ -6,6 +6,8 @@ def:package_link(pkg) ?>
 <?cs # A link to a type, or not if it's a primitive type
         link: whether to create a link at the top level, always creates links in
               recursive invocations.
+              Overloaded version to support use of 'nav' parameter, which when true,
+              will not include the generics in the class name (good for sidenav lists)
         Expects the following fields:
             .name
             .link
@@ -14,14 +16,16 @@ def:package_link(pkg) ?>
             .extendsBounds.N.(more links) (... extends ... & ...)
             .typeArguments.N.(more links) (< ... >)
 ?><?cs 
-def:type_link_impl(type, link) ?><?cs 
+def:type_link_impl(type, link) ?><?cs call:type_link_impl2(type, link, "false") ?><?cs /def ?><?cs
+def:type_link_impl2(type, link, nav) ?><?cs
   if:type.link && link=="true" ?><?cs
     if:type.federated ?><a href="<?cs var:type.link ?>"><?cs
       var:type.label ?></a><?cs 
     else ?><a href="<?cs var:toroot ?><?cs var:type.link ?>"><?cs var:type.label ?></a><?cs
     /if ?><?cs
   else ?><?cs var:type.label ?><?cs
-  /if ?><?cs if:subcount(type.extendsBounds) ?><?cs
+  /if ?><?cs 
+  if:subcount(type.extendsBounds) ?><?cs
       each:t=type.extendsBounds ?><?cs
           if:first(t) ?>&nbsp;extends&nbsp;<?cs else ?>&nbsp;&amp;&nbsp;<?cs /if ?><?cs
           call:type_link_impl(t, "true") ?><?cs
@@ -33,7 +37,7 @@ def:type_link_impl(type, link) ?><?cs
           call:type_link_impl(t, "true") ?><?cs
       /each ?><?cs
   /if ?><?cs
-  if:subcount(type.typeArguments)
+  if:subcount(type.typeArguments) && nav=="false"
       ?>&lt;<?cs each:t=type.typeArguments ?><?cs call:type_link_impl(t, "true") ?><?cs
           if:!last(t) ?>,&nbsp;<?cs /if ?><?cs
       /each ?>&gt;<?cs
@@ -41,7 +45,8 @@ def:type_link_impl(type, link) ?><?cs
 /def ?>
 
 <?cs def:class_name(type) ?><?cs call:type_link_impl(type, "false") ?><?cs /def ?>
-<?cs def:type_link(type) ?><?cs call:type_link_impl(type, "true") ?><?cs /def ?>
+<?cs def:type_link2(type,nav) ?><?cs call:type_link_impl2(type, "true", nav) ?><?cs /def ?>
+<?cs def:type_link(type) ?><?cs call:type_link2(type, "false") ?><?cs /def ?>
 
 <?cs # a conditional link.
       if the "condition" parameter evals to true then the link is displayed
@@ -93,15 +98,11 @@ def:tag_list(tags) ?><?cs
   /each ?><?cs
 /def ?>
 
-<?cs # The message about This xxx is deprecated. ?><?cs 
-def:deprecated_text(kind) ?>
-  This <?cs var:kind ?> is deprecated.<?cs 
-/def ?>
-
 <?cs # Show the short-form description of something.  These come from shortDescr and deprecated ?><?cs 
 def:short_descr(obj) ?><?cs
   if:subcount(obj.deprecated) ?>
-      <em><?cs call:deprecated_text(obj.kind) ?>
+      <em>This <?cs var:obj.kind ?> was deprecated
+      in API level <?cs var:obj.deprecatedsince ?>.
       <?cs call:tag_list(obj.deprecated) ?></em><?cs
   else ?><?cs call:tag_list(obj.shortDescr) ?><?cs
   /if ?><?cs
@@ -111,7 +112,8 @@ def:short_descr(obj) ?><?cs
 def:deprecated_warning(obj) ?><?cs 
   if:subcount(obj.deprecated) ?><p>
   <p class="caution">
-      <strong><?cs call:deprecated_text(obj.kind) ?></strong><br/> <?cs 
+      <strong>This <?cs var:obj.kind ?> was deprecated
+      in API level <?cs var:obj.deprecatedsince ?></strong>.<br/> <?cs
       call:tag_list(obj.deprecated) ?>
   </p><?cs 
   /if ?><?cs 
@@ -137,11 +139,11 @@ def:see_also_tags(also) ?><?cs
 <?cs /def ?>
 
 <?cs # print the API Level ?><?cs
-def:since_tags(obj) ?>
-<?cs if:reference.apilevels && obj.since ?>
-  Since: <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API Level <?cs var:obj.since ?></a>
-<?cs /if ?>
-<?cs /def ?>
+def:since_tags(obj) ?><?cs
+if:reference.apilevels && obj.since ?>
+  Added in <a href="<?cs var:toroot ?>guide/topics/manifest/uses-sdk-element.html#ApiLevels">API level <?cs var:obj.since ?></a><?cs
+/if ?><?cs
+/def ?>
 <?cs def:federated_refs(obj) ?>
   <?cs if:subcount(obj.federated) ?>
     <div>
@@ -236,7 +238,7 @@ def:list(label, classes) ?><?cs
     <li><h2><?cs var:label ?></h2>
       <ul><?cs 
       each:cl=classes ?>
-          <li class="<?cs if:class.name == cl.label?>selected <?cs /if ?>api apilevel-<?cs var:cl.since ?>"><?cs call:type_link(cl) ?></li><?cs 
+          <li class="<?cs if:class.name == cl.label?>selected <?cs /if ?>api apilevel-<?cs var:cl.since ?>"><?cs call:type_link2(cl,"true") ?></li><?cs
       /each ?>
       </ul>
     </li><?cs 

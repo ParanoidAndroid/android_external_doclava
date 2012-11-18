@@ -432,21 +432,21 @@ class ApiFile {
       } else if ("long".equals(type)) {
         return Long.valueOf(val.substring(0, val.length()-1));
       } else if ("float".equals(type)) {
-        if ("(1.0f/0.0f)".equals(val)) {
+        if ("(1.0f/0.0f)".equals(val) || "(1.0f / 0.0f)".equals(val)) {
           return Float.POSITIVE_INFINITY;
-        } else if ("(-1.0f/0.0f)".equals(val)) {
+        } else if ("(-1.0f/0.0f)".equals(val) || "(-1.0f / 0.0f)".equals(val)) {
           return Float.NEGATIVE_INFINITY;
-        } else if ("(0.0f/0.0f)".equals(val)) {
+        } else if ("(0.0f/0.0f)".equals(val) || "(0.0f / 0.0f)".equals(val)) {
           return Float.NaN;
         } else {
           return Float.valueOf(val);
         }
       } else if ("double".equals(type)) {
-        if ("(1.0/0.0)".equals(val)) {
+        if ("(1.0/0.0)".equals(val) || "(1.0 / 0.0)".equals(val)) {
           return Double.POSITIVE_INFINITY;
-        } else if ("(-1.0/0.0)".equals(val)) {
+        } else if ("(-1.0/0.0)".equals(val) || "(-1.0 / 0.0)".equals(val)) {
           return Double.NEGATIVE_INFINITY;
-        } else if ("(0.0/0.0)".equals(val)) {
+        } else if ("(0.0/0.0)".equals(val) || "(0.0 / 0.0)".equals(val)) {
           return Double.NaN;
         } else {
           return Double.valueOf(val);

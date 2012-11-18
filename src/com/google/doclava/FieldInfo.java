@@ -326,6 +326,9 @@ public class FieldInfo extends MemberInfo {
     TagInfo.makeHDF(data, base + ".deprecated", comment().deprecatedTags());
     TagInfo.makeHDF(data, base + ".seeAlso", comment().seeTags());
     data.setValue(base + ".since", getSince());
+    if (isDeprecated()) {
+      data.setValue(base + ".deprecatedsince", getDeprecatedSince());
+    }
     data.setValue(base + ".final", isFinal() ? "final" : "");
     data.setValue(base + ".static", isStatic() ? "static" : "");
     if (isPublic()) {

@@ -852,6 +852,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     TagInfo.makeHDF(data, base + ".shortDescr", this.firstSentenceTags());
     TagInfo.makeHDF(data, base + ".deprecated", deprecatedTags());
     data.setValue(base + ".since", getSince());
+    if (isDeprecated()) {
+      data.setValue(base + ".deprecatedsince", getDeprecatedSince());
+    }
     setFederatedReferences(data, base);
   }
 
@@ -895,6 +898,9 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       data.setValue("class.kind", kind);
     }
     data.setValue("class.since", getSince());
+    if (isDeprecated()) {
+      data.setValue("class.deprecatedsince", getDeprecatedSince());
+    }
     setFederatedReferences(data, "class");
 
     // the containing package -- note that this can be passed to type_link,

@@ -118,7 +118,7 @@ public class SinceTagger {
       }
 
       versionPackage(versionName, classDoc.containingPackage());
-      versionClass(versionName, classDoc);
+      versionClass(versionName, classSpec, classDoc);
       versionConstructors(versionName, classSpec, classDoc);
       versionFields(versionName, classSpec, classDoc);
       versionMethods(versionName, classSpec, classDoc);
@@ -137,9 +137,16 @@ public class SinceTagger {
   /**
    * Applies version information to {@code doc} where not already present.
    */
-  private void versionClass(String versionName, ClassInfo doc) {
+  private void versionClass(String versionName, ClassInfo spec, ClassInfo doc) {
     if (doc.getSince() == null) {
       doc.setSince(versionName);
+    }
+
+    // Set deprecated version
+    if (doc.isDeprecated() && doc.getDeprecatedSince() == null) {
+      if (spec.isDeprecated()) {
+        doc.setDeprecatedSince(versionName);
+      }
     }
   }
 
@@ -152,6 +159,17 @@ public class SinceTagger {
           && spec.hasConstructor(constructor)) {
         constructor.setSince(versionName);
       }
+
+      // Set deprecated version
+      if (constructor.isDeprecated() && constructor.getDeprecatedSince() == null) {
+        // Find matching field from API spec
+        if (spec.allConstructorsMap().containsKey(constructor.getHashableName())) {
+          MethodInfo specConstructor = spec.allConstructorsMap().get(constructor.getHashableName());
+          if (specConstructor.isDeprecated()) {
+            constructor.setDeprecatedSince(versionName);
+          }
+        }
+      }
     }
   }
 
@@ -163,6 +181,17 @@ public class SinceTagger {
       if (field.getSince() == null && spec.allFields().containsKey(field.name())) {
         field.setSince(versionName);
       }
+
+      // Set deprecated version
+      if (field.isDeprecated() && field.getDeprecatedSince() == null) {
+        // Find matching field from API spec
+        if (spec.allFields().containsKey(field.name())) {
+          FieldInfo specField = spec.allFields().get(field.name());
+          if (specField.isDeprecated()) {
+            field.setDeprecatedSince(versionName);
+          }
+        }
+      }
     }
   }
 
@@ -171,6 +200,18 @@ public class SinceTagger {
    */
   private void versionMethods(String versionName, ClassInfo spec, ClassInfo doc) {
     for (MethodInfo method : doc.methods()) {
+
+      // Set deprecated version
+      if (method.isDeprecated() && method.getDeprecatedSince() == null) {
+        // Find matching method from API spec
+        if (spec.allMethods().containsKey(method.getHashableName())) {
+          MethodInfo specMethod = spec.allMethods().get(method.getHashableName());
+          if (specMethod.isDeprecated()) {
+            method.setDeprecatedSince(versionName);
+          }
+        }
+      }
+
       if (method.getSince() != null) {
         continue;
       }

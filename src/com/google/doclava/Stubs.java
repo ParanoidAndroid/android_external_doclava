@@ -31,12 +31,13 @@ import java.util.List;
 import java.util.Set;
 
 public class Stubs {
-  public static void writeStubsAndApi(String stubsDir, String apiFile,
+  public static void writeStubsAndApi(String stubsDir, String apiFile, String keepListFile,
       HashSet<String> stubPackages) {
     // figure out which classes we need
     final HashSet<ClassInfo> notStrippable = new HashSet<ClassInfo>();
     ClassInfo[] all = Converter.allClasses();
     PrintStream apiWriter = null;
+    PrintStream keepListWriter = null;
     if (apiFile != null) {
       try {
         File xml = new File(apiFile);
@@ -44,6 +45,16 @@ public class Stubs {
         apiWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(xml)));
       } catch (FileNotFoundException e) {
         Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
+            "Cannot open file for write.");
+      }
+    }
+    if (keepListFile != null) {
+      try {
+        File keepList = new File(keepListFile);
+        keepList.getParentFile().mkdirs();
+        keepListWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(keepList)));
+      } catch (FileNotFoundException e) {
+        Errors.error(Errors.IO_ERROR, new SourcePositionInfo(keepListFile, 0, 0),
             "Cannot open file for write.");
       }
     }
@@ -126,8 +137,8 @@ public class Stubs {
           if (stubsDir != null) {
             writeClassFile(stubsDir, notStrippable, cl);
           }
-          // build class list for xml file
-          if (apiWriter != null) {
+          // build class list for api file or keep list file
+          if (apiWriter != null || keepListWriter != null) {
             if (packages.containsKey(cl.containingPackage())) {
               packages.get(cl.containingPackage()).add(cl);
             } else {
@@ -144,6 +155,12 @@ public class Stubs {
     if (apiWriter != null) {
       writeApi(apiWriter, packages, notStrippable);
       apiWriter.close();
+    }
+
+    // write out the keep list
+    if (keepListWriter != null) {
+      writeKeepList(keepListWriter, packages, notStrippable);
+      keepListWriter.close();
     }
   }
 
@@ -1238,6 +1255,147 @@ public class Stubs {
     apiWriter.print("\n");
   }
 
+  static void writeKeepList(PrintStream keepListWriter,
+      HashMap<PackageInfo, List<ClassInfo>> allClasses, HashSet<ClassInfo> notStrippable) {
+    // extract the set of packages, sort them by name, and write them out in that order
+    Set<PackageInfo> allClassKeys = allClasses.keySet();
+    PackageInfo[] allPackages = allClassKeys.toArray(new PackageInfo[allClassKeys.size()]);
+    Arrays.sort(allPackages, PackageInfo.comparator);
+
+    for (PackageInfo pack : allPackages) {
+      writePackageKeepList(keepListWriter, pack, allClasses.get(pack), notStrippable);
+    }
+  }
+
+  static void writePackageKeepList(PrintStream keepListWriter, PackageInfo pack,
+      Collection<ClassInfo> classList, HashSet<ClassInfo> notStrippable) {
+    // Work around the bogus "Array" class we invent for
+    // Arrays.copyOf's Class<? extends T[]> newType parameter. (http://b/2715505)
+    if (pack.name().equals(PackageInfo.DEFAULT_PACKAGE)) {
+      return;
+    }
+
+    ClassInfo[] classes = classList.toArray(new ClassInfo[classList.size()]);
+    Arrays.sort(classes, ClassInfo.comparator);
+    for (ClassInfo cl : classes) {
+      writeClassKeepList(keepListWriter, cl, notStrippable);
+    }
+  }
+
+  static void writeClassKeepList(PrintStream keepListWriter, ClassInfo cl,
+      HashSet<ClassInfo> notStrippable) {
+    keepListWriter.print("-keep class ");
+    keepListWriter.print(to$Class(cl.qualifiedName()));
+
+    keepListWriter.print(" {\n");
+
+    ArrayList<MethodInfo> constructors = cl.constructors();
+    Collections.sort(constructors, MethodInfo.comparator);
+    for (MethodInfo mi : constructors) {
+      writeConstructorKeepList(keepListWriter, mi);
+    }
+
+    keepListWriter.print("\n");
+
+    ArrayList<MethodInfo> methods = cl.allSelfMethods();
+    Collections.sort(methods, MethodInfo.comparator);
+    for (MethodInfo mi : methods) {
+      if (!methodIsOverride(notStrippable, mi)) {
+        writeMethodKeepList(keepListWriter, mi);
+      }
+    }
+
+    keepListWriter.print("\n");
+
+    ArrayList<FieldInfo> enums = cl.enumConstants();
+    Collections.sort(enums, FieldInfo.comparator);
+    for (FieldInfo fi : enums) {
+      writeFieldKeepList(keepListWriter, fi);
+    }
+
+    keepListWriter.print("\n");
+
+    ArrayList<FieldInfo> fields = cl.allSelfFields();
+    Collections.sort(fields, FieldInfo.comparator);
+    for (FieldInfo fi : fields) {
+      writeFieldKeepList(keepListWriter, fi);
+    }
+
+    keepListWriter.print("}\n\n");
+  }
+
+  static void writeConstructorKeepList(PrintStream keepListWriter, MethodInfo mi) {
+    keepListWriter.print("    ");
+    String name = mi.name();
+    name = name.replace(".", "$");
+    keepListWriter.print(name);
+
+    writeParametersKeepList(keepListWriter, mi, mi.parameters());
+    keepListWriter.print(";\n");
+  }
+
+  static void writeMethodKeepList(PrintStream keepListWriter, MethodInfo mi) {
+    keepListWriter.print("    ");
+    keepListWriter.print(mi.scope());
+    if (mi.isStatic()) {
+      keepListWriter.print(" static");
+    }
+    if (mi.isAbstract()) {
+      keepListWriter.print(" abstract");
+    }
+    if (mi.isSynchronized()) {
+      keepListWriter.print(" synchronized");
+    }
+    keepListWriter.print(" ");
+    if (mi.returnType() == null) {
+      keepListWriter.print("void");
+    } else {
+      keepListWriter.print(getCleanTypeName(mi.returnType()));
+    }
+    keepListWriter.print(" ");
+    keepListWriter.print(mi.name());
+
+    writeParametersKeepList(keepListWriter, mi, mi.parameters());
+
+    keepListWriter.print(";\n");
+  }
+
+  static void writeParametersKeepList(PrintStream keepListWriter, MethodInfo method,
+      ArrayList<ParameterInfo> params) {
+    keepListWriter.print("(");
+
+    for (ParameterInfo pi : params) {
+      if (pi != params.get(0)) {
+        keepListWriter.print(", ");
+      }
+      keepListWriter.print(getCleanTypeName(pi.type()));
+    }
+
+    keepListWriter.print(")");
+  }
+
+  static void writeFieldKeepList(PrintStream keepListWriter, FieldInfo fi) {
+    keepListWriter.print("    ");
+    keepListWriter.print(fi.scope());
+    if (fi.isStatic()) {
+      keepListWriter.print(" static");
+    }
+    if (fi.isTransient()) {
+      keepListWriter.print(" transient");
+    }
+    if (fi.isVolatile()) {
+      keepListWriter.print(" volatile");
+    }
+
+    keepListWriter.print(" ");
+    keepListWriter.print(getCleanTypeName(fi.type()) + fi.type().dimension());
+
+    keepListWriter.print(" ");
+    keepListWriter.print(fi.name());
+
+    keepListWriter.print(";\n");
+  }
+
   static String fullParameterTypeName(MethodInfo method, TypeInfo type, boolean isLast) {
     String fullTypeName = type.fullName(method.typeVariables());
     if (isLast && method.isVarArgs()) {
@@ -1247,5 +1405,22 @@ public class Stubs {
       fullTypeName = type.fullNameNoDimension(method.typeVariables()) + "...";
     }
     return fullTypeName;
+  }
+
+  static String to$Class(String name) {
+    int pos = 0;
+    while ((pos = name.indexOf('.', pos)) > 0) {
+      String n = name.substring(0, pos);
+      if (Converter.obtainClass(n) != null) {
+        return n + (name.substring(pos).replace('.', '$'));
+      }
+      pos = pos + 1;
+    }
+    return name;
+  }
+
+  static String getCleanTypeName(TypeInfo t) {
+      return t.isPrimitive() ? t.simpleTypeName() + t.dimension() :
+              to$Class(t.asClassInfo().qualifiedName() + t.dimension());
   }
 }
