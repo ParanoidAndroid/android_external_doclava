@@ -311,6 +311,8 @@ public class Comment {
       mSeeTagsList.add(new SeeTagInfo("@see", "@see", text, mBase, pos));
     } else if (name.equals("@link") || name.equals("@linkplain")) {
       mInlineTagsList.add(new SeeTagInfo(name, "@see", text, mBase, pos));
+    } else if (name.equals("@value")) {
+      mInlineTagsList.add(new SeeTagInfo(name, "@value", text, mBase, pos));
     } else if (name.equals("@throws") || name.equals("@exception")) {
       mThrowsTagsList.add(new ThrowsTagInfo("@throws", "@throws", text, mBase, pos));
     } else if (name.equals("@return")) {
