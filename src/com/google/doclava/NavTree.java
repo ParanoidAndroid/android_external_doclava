@@ -25,12 +25,12 @@ import java.util.TreeMap;
 
 public class NavTree {
 
-  public static void writeNavTree(String dir) {
+  public static void writeNavTree(String dir, String refPrefix) {
     List<Node> children = new ArrayList<Node>();
     for (PackageInfo pkg : Doclava.choosePackages()) {
       children.add(makePackageNode(pkg));
     }
-    Node node = new Node("Reference", dir + "packages.html", children, null);
+    Node node = new Node("Reference", dir + refPrefix + "packages.html", children, null);
 
     StringBuilder buf = new StringBuilder();
     if (false) {
@@ -45,7 +45,13 @@ public class NavTree {
 
     Data data = Doclava.makeHDF();
     data.setValue("reference_tree", buf.toString());
-    ClearPage.write(data, "navtree_data.cs", "navtree_data.js");
+    if (refPrefix == "gms-"){
+      ClearPage.write(data, "gms_navtree_data.cs", "gms_navtree_data.js");
+    } else if (refPrefix == "gcm-"){
+      ClearPage.write(data, "gcm_navtree_data.cs", "gcm_navtree_data.js");
+    } else {
+      ClearPage.write(data, "navtree_data.cs", "navtree_data.js");
+    }
   }
 
   /**

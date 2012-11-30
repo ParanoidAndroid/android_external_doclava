@@ -80,6 +80,9 @@ public class Doclava {
 
   public static JSilver jSilver = null;
 
+  private static boolean gmsRef = false;
+  private static boolean gcmRef = false;
+
   public static boolean checkLevel(int level) {
     return (showLevel & level) == level;
   }
@@ -173,7 +176,7 @@ public class Doclava {
       } else if (a[0].equals("-keeplist")) {
         keepListFile = a[1];
       } else if (a[0].equals("-proguard")) {
-          proguardFile = a[1];
+        proguardFile = a[1];
       } else if (a[0].equals("-proofread")) {
         proofreadFile = a[1];
       } else if (a[0].equals("-todo")) {
@@ -280,7 +283,13 @@ public class Doclava {
       writeAssets();
 
       // Navigation tree
-      NavTree.writeNavTree(javadocDir);
+       String refPrefix = new String();
+      if(gmsRef){
+        refPrefix = "gms-";
+      } else if(gcmRef){
+        refPrefix = "gcm-";
+      }
+      NavTree.writeNavTree(javadocDir, refPrefix);
 
       // Write yaml tree.
       if (yamlNavFile != null){
@@ -288,7 +297,7 @@ public class Doclava {
       }
 
       // Packages Pages
-      writePackages(javadocDir + "packages" + htmlExtension);
+      writePackages(javadocDir + refPrefix + "packages" + htmlExtension);
 
       // Classes
       writeClassLists();
@@ -550,9 +559,16 @@ public class Doclava {
     if (option.equals("-yaml")) {
       return 2;
     }
+    if (option.equals("-gmsref")) {
+      gmsRef = true;
+      return 1;
+    }
+    if (option.equals("-gcmref")) {
+      gcmRef = true;
+      return 1;
+    }
     return 0;
   }
-
   public static boolean validOptions(String[][] options, DocErrorReporter r) {
     for (String[] a : options) {
       if (a[0].equals("-error") || a[0].equals("-warning") || a[0].equals("-hide")) {
@@ -641,7 +657,11 @@ public class Doclava {
       if (allHidden) {
         continue;
       }
-
+      if(gmsRef){
+          data.setValue("reference.gms", "true");
+      } else if(gcmRef){
+          data.setValue("reference.gcm", "true");
+      }
       data.setValue("reference", "1");
       data.setValue("reference.apilevels", sinceTagger.hasVersions() ? "1" : "0");
       data.setValue("docs.packages." + i + ".name", s);
