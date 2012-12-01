@@ -205,7 +205,7 @@ public class Comment {
       String tagName = text.substring(start+1, endOfFirstPart);
       String tagText = text.substring(startOfSecondPart, end-1);
       if (tagName.equals("@value")) {
-        tagText = tagText.replace('#', '.';
+        tagText = tagText.replace('#', '.');
       }
       tag(tagName, tagText, true, pos);
   }
