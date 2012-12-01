@@ -73,7 +73,7 @@ def:tag_list(tags) ?><?cs
       elif:tag.kind == "@see" ?><code><a href="<?cs var:toroot ?><?cs var:tag.href ?>"><?cs var:tag.label ?></a></code><?cs
       elif:tag.kind == "@seeHref" ?><a href="<?cs var:tag.href ?>"><?cs var:tag.label ?></a><?cs
       elif:tag.kind == "@seeJustLabel" ?><?cs var:tag.label ?><?cs
-      elif:tag.kind == "@value" ?><code class='value'><a href="<?cs var:toroot ?><?cs var:tag.href ?>"><?cs var:tag.label ?></a></code><?cs
+      elif:tag.kind == "@value" ?><code><a href="<?cs var:toroot ?><?cs var:tag.href ?>"><?cs var:tag.text ?></a></code><?cs
       elif:tag.kind == "@code" ?><code><?cs var:tag.text ?></code><?cs
       elif:tag.kind == "@samplecode" ?><pre><?cs var:tag.text ?></pre><?cs
       elif:tag.name == "@sample" ?><pre><?cs var:tag.text ?></pre><?cs
