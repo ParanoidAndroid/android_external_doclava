@@ -53,6 +53,10 @@ public class TagInfo {
 
   public void makeHDF(Data data, String base) {
     data.setValue(base + ".name", name());
+
+    if (name().equals("@value")) {
+      mText = mText.replace('#', '.');
+    }
     data.setValue(base + ".text", text());
     data.setValue(base + ".kind", kind());
   }
