@@ -226,7 +226,7 @@ def:class_link_list(label, classes) ?><?cs
     <li><h2><?cs var:label ?></h2>
       <ul><?cs 
       each:cl=classes ?>
-        <li class="api apilevel-<?cs var:cl.type.since ?>"><?cs call:type_link(cl.type) ?></li><?cs 
+        <li class="api apilevel-<?cs var:cl.type.since ?>"><?cs call:type_link2(cl.type,"true") ?></li><?cs
       /each ?>
       </ul>
     </li><?cs 
