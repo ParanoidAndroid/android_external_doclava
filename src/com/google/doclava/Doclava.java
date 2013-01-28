@@ -64,7 +64,14 @@ public class Doclava {
 
   public static int showLevel = SHOW_PROTECTED;
 
-  public static final String javadocDir = "reference/";
+  public static String outputPathBase = "/";
+  public static ArrayList<String> inputPathHtmlDirs = new ArrayList<String>();
+  public static ArrayList<String> inputPathHtmlDir2 = new ArrayList<String>();
+  public static String outputPathHtmlDirs;
+  public static String outputPathHtmlDir2;
+  public static boolean devsite = false;
+  public static final String devsiteRoot = "en/";
+  public static String javadocDir = "reference/";
   public static String htmlExtension;
 
   public static RootDoc root;
@@ -74,6 +81,8 @@ public class Doclava {
   public static SinceTagger sinceTagger = new SinceTagger();
   public static HashSet<String> knownTags = new HashSet<String>();
   public static FederationTagger federationTagger = new FederationTagger();
+  public static Set<String> showAnnotations = new HashSet<String>();
+  public static boolean includeDefaultAssets = true;
   private static boolean generateDocs = true;
   private static boolean parseComments = false;
   private static String yamlNavFile = null;
@@ -141,7 +150,7 @@ public class Doclava {
     String[][] options = r.options();
     for (String[] a : options) {
       if (a[0].equals("-d")) {
-        ClearPage.outputDir = a[1];
+        outputPathBase = outputPathHtmlDirs = ClearPage.outputDir = a[1];
       } else if (a[0].equals("-templatedir")) {
         ClearPage.addTemplateDir(a[1]);
       } else if (a[0].equals("-hdf")) {
@@ -152,8 +161,18 @@ public class Doclava {
         ClearPage.toroot = a[1];
       } else if (a[0].equals("-samplecode")) {
         sampleCodes.add(new SampleCode(a[1], a[2], a[3]));
+      //the destination output path for main htmldir
       } else if (a[0].equals("-htmldir")) {
-        ClearPage.htmlDirs.add(a[1]);
+        inputPathHtmlDirs.add(a[1]);
+        ClearPage.htmlDirs = inputPathHtmlDirs;
+      //the destination output path for additional htmldir
+      } else if (a[0].equals("-htmldir2")) {
+          if (a[2].equals("default")) {
+          inputPathHtmlDirs.add(a[1]);
+        } else {
+          inputPathHtmlDir2.add(a[1]);
+          outputPathHtmlDir2 = a[2];
+        }
       } else if (a[0].equals("-title")) {
         Doclava.title = a[1];
       } else if (a[0].equals("-werror")) {
@@ -175,6 +194,8 @@ public class Doclava {
         }
       } else if (a[0].equals("-keeplist")) {
         keepListFile = a[1];
+      } else if (a[0].equals("-showAnnotation")) {
+        showAnnotations.add(a[1]);
       } else if (a[0].equals("-proguard")) {
         proguardFile = a[1];
       } else if (a[0].equals("-proofread")) {
@@ -225,6 +246,11 @@ public class Doclava {
         federationTagger.addSiteApi(name, file);
       } else if (a[0].equals("-yaml")) {
         yamlNavFile = a[1];
+      } else if (a[0].equals("-devsite")) {
+        devsite = true;
+        // Don't copy the doclava assets to devsite output (ie use proj assets only)
+        includeDefaultAssets = false;
+        outputPathHtmlDirs = outputPathHtmlDirs + "/" + devsiteRoot;
       }
     }
 
@@ -275,8 +301,20 @@ public class Doclava {
         TodoFile.writeTodoFile(todoFile);
       }
 
+      // HTML2 Pages -- Generate Pages from optional secondary dir
+      if (!inputPathHtmlDir2.isEmpty()) {
+        if (!outputPathHtmlDir2.isEmpty()) {
+          ClearPage.outputDir = outputPathBase + "/" + outputPathHtmlDir2;
+        }
+        ClearPage.htmlDirs = inputPathHtmlDir2;
+        writeHTMLPages();
+        ClearPage.htmlDirs = inputPathHtmlDirs;
+      }
+
       // HTML Pages
       if (!ClearPage.htmlDirs.isEmpty()) {
+        ClearPage.htmlDirs = inputPathHtmlDirs;
+        ClearPage.outputDir = outputPathHtmlDirs;
         writeHTMLPages();
       }
 
@@ -335,7 +373,7 @@ public class Doclava {
 
     long time = System.nanoTime() - startTime;
     System.out.println("DroidDoc took " + (time / 1000000000) + " sec. to write docs to "
-        + ClearPage.outputDir);
+        + outputPathBase );
 
     return !Errors.hadError;
   }
@@ -484,6 +522,9 @@ public class Doclava {
     if (option.equals("-htmldir")) {
       return 2;
     }
+    if (option.equals("-htmldir2")) {
+      return 3;
+    }
     if (option.equals("-title")) {
       return 2;
     }
@@ -500,6 +541,9 @@ public class Doclava {
       return 2;
     }
     if (option.equals("-keeplist")) {
+      return 2;
+    }
+    if (option.equals("-showAnnotation")) {
       return 2;
     }
     if (option.equals("-proguard")) {
@@ -558,6 +602,9 @@ public class Doclava {
     }
     if (option.equals("-yaml")) {
       return 2;
+    }
+    if (option.equals("-devsite")) {
+      return 1;
     }
     if (option.equals("-gmsref")) {
       gmsRef = true;
@@ -715,7 +762,7 @@ public class Doclava {
 
   public static void writeAssets() {
     JarFile thisJar = JarUtils.jarForClass(Doclava.class, null);
-    if (thisJar != null) {
+    if ((thisJar != null) && (includeDefaultAssets)) {
       try {
         List<String> templateDirs = ClearPage.getBundledTemplateDirs();
         for (String templateDir : templateDirs) {
@@ -729,12 +776,19 @@ public class Doclava {
       }
     }
 
+    //write the project-specific assets
     List<String> templateDirs = ClearPage.getTemplateDirs();
     for (String templateDir : templateDirs) {
       File assets = new File(templateDir + "/assets");
       if (assets.isDirectory()) {
         writeDirectory(assets, "assets/", null);
       }
+    }
+
+    // Create the timestamp.js file based on .cs file
+    if (devsite) {
+      Data timedata = Doclava.makeHDF();
+      ClearPage.write(timedata, "timestamp.cs", "timestamp.js");
     }
   }
 
@@ -1064,10 +1118,9 @@ public class Doclava {
 
   public static void writeClass(ClassInfo cl, Data data) {
     cl.makeHDF(data);
-
     setPageTitle(data, cl.name());
-    ClearPage.write(data, "class.cs", cl.htmlPage());
-
+    String outfile = cl.htmlPage();
+    ClearPage.write(data, "class.cs", outfile);
     Proofread.writeClass(cl.htmlPage(), cl);
   }
 

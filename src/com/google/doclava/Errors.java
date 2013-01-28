@@ -167,6 +167,7 @@ public class Errors {
   public static final Error NO_SINCE_DATA = new Error(116, HIDDEN);
   public static final Error NO_FEDERATION_DATA = new Error(117, WARNING);
   public static final Error BROKEN_SINCE_FILE = new Error(118, ERROR);
+  public static final Error INVALID_CONTENT_TYPE = new Error(119, ERROR);
 
   public static final Error[] ERRORS =
       {UNRESOLVED_LINK, BAD_INCLUDE_TAG, UNKNOWN_TAG, UNKNOWN_PARAM_TAG_NAME,
@@ -177,7 +178,7 @@ public class Errors {
           REMOVED_METHOD, REMOVED_FIELD, REMOVED_INTERFACE, CHANGED_STATIC, CHANGED_FINAL,
           CHANGED_TRANSIENT, CHANGED_VOLATILE, CHANGED_TYPE, CHANGED_VALUE, CHANGED_SUPERCLASS,
           CHANGED_SCOPE, CHANGED_ABSTRACT, CHANGED_THROWS, CHANGED_NATIVE, CHANGED_CLASS,
-          CHANGED_DEPRECATED, CHANGED_SYNCHRONIZED, BROKEN_SINCE_FILE};
+          CHANGED_DEPRECATED, CHANGED_SYNCHRONIZED, BROKEN_SINCE_FILE, INVALID_CONTENT_TYPE};
 
   public static boolean setErrorLevel(int code, int level) {
     for (Error e : ERRORS) {
