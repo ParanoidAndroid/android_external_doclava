@@ -176,7 +176,7 @@ public class ClearPage {
       System.err.println(from.getAbsolutePath() + ": Error opening file");
       return;
     }
-    if ((Doclava.devsite) && (!isValidContentType(toPath, DROIDDOC_VALID_CONTENT_TYPES))) {
+    if (!isValidContentType(toPath, DROIDDOC_VALID_CONTENT_TYPES)) {
         Errors.error(Errors.INVALID_CONTENT_TYPE, null, "Failed to process " + from
                 + ": Invalid file type. Please move the file to frameworks/base/docs/image_sources/... or docs/downloads/...");
         return;
