@@ -90,6 +90,7 @@ public class Doclava {
 
   private static boolean gmsRef = false;
   private static boolean gcmRef = false;
+  private static boolean sac = false;
 
   public static boolean checkLevel(int level) {
     return (showLevel & level) == level;
@@ -735,8 +736,11 @@ public class Doclava {
         } else if (len > 3 && ".jd".equals(templ.substring(len - 3))) {
           String filename = templ.substring(0, len - 3) + htmlExtension;
           DocFile.writePage(f.getAbsolutePath(), relative, filename);
-        } else {
-          ClearPage.copyFile(f, templ);
+        } else if(!f.getName().equals(".DS_Store")){
+              Data data = makeHDF();
+              String hdfValue = data.getValue("sac") == null ? "" : data.getValue("sac");
+              boolean allowExcepted = hdfValue.equals("true") ? true : false;
+              ClearPage.copyFile(allowExcepted, f, templ);
         }
       } else if (f.isDirectory()) {
         writeDirectory(f, relative + f.getName() + "/", js);

@@ -164,6 +164,14 @@ public class DocFile {
       } else if ((filename.indexOf("tools") == 0) || (filename.indexOf("sdk") == 0)) {
         hdf.setValue("tools", "true");
         fromTemplate = hdf.getValue("page.template", "");
+      } else if (filename.indexOf("devices") == 0) {
+        hdf.setValue("devices", "true");
+      } else if (filename.indexOf("source") == 0) {
+        hdf.setValue("source", "true");
+      } else if (filename.indexOf("accessories") == 0) {
+        hdf.setValue("accessories", "true");
+      } else if (filename.indexOf("compatibility") == 0) {
+        hdf.setValue("compatibility", "true");
       }
       if (fromTemplate.equals("sdk")) {
         ClearPage.write(hdf, "sdkpage.cs", outfile);
