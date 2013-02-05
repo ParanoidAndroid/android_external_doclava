@@ -220,7 +220,7 @@ public class ClearPage {
     }
   }
 
-  public static String[] DROIDDOC_VALID_CONTENT_TYPES = {".txt", ".css", ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml"};
+  public static String[] DROIDDOC_VALID_CONTENT_TYPES = {".txt", ".css", ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml", ".pdf"};
 
   public static boolean isValidContentType(String s, String[] list) {
     for (String t : list) {
