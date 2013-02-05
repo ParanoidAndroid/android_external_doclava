@@ -50,7 +50,6 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
    */
   public ClassInfo(String qualifiedName) {
     super("", SourcePositionInfo.UNKNOWN);
-
     mQualifiedName = qualifiedName;
     if (qualifiedName.lastIndexOf('.') != -1) {
       mName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
@@ -1545,7 +1544,6 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
    * Returns all methods defined directly in this class. For a list of all
    * methods supported by this class, see {@link #methods()}.
    */
-
   public Map<String, MethodInfo> allMethods() {
     return mApiCheckMethods;
   }

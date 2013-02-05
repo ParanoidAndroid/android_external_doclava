@@ -51,6 +51,27 @@ public class DocFile {
     }
   }
 
+  public static String[] DEVSITE_VALID_LANGS = {"en", "es","ja", "ko", "ru", "zh-cn"};
+
+  public static String getPathRoot(String filename) {
+    String[] stripStr = filename.split("\\/");
+    String outFrag = stripStr[0];
+    if (stripStr.length > 0) {
+      for (String t : DEVSITE_VALID_LANGS) {
+        if (stripStr[0].equals("intl")) {
+          if (stripStr[1].equals(t)) {
+            outFrag = stripStr[2];
+            break;
+          }
+        } else if (stripStr[0].equals(t)) {
+            outFrag = stripStr[1];
+            break;
+        }
+      }
+    }
+    return outFrag;
+  }
+  
   public static void writePage(String docfile, String relative, String outfile) {
     Data hdf = Doclava.makeHDF();
 
@@ -121,33 +142,30 @@ public class DocFile {
       ClearPage.write(hdf, "docpage.cs", outfile);
     } else {
       String filename = outfile;
-      // Check whether this is a localized page and remove the intl/*/ path from filename
-      if (filename.indexOf("intl/") == 0) {
-        filename = filename.substring(filename.indexOf("/", 5) + 1); // After intl/ to get 2nd /
-      }
-      if (filename.indexOf("design/") == 0) {
+      // Strip out the intl and lang id substr and get back just the 
+      // guide, design, distribute, etc. 
+      filename = getPathRoot(filename);
+      if (filename.indexOf("design") == 0) {
         hdf.setValue("design", "true");
-      } else if (filename.indexOf("develop/") == 0) {
+      } else if (filename.indexOf("develop") == 0) {
         hdf.setValue("develop", "true");
-      } else if (filename.indexOf("guide/") == 0) {
+      } else if (filename.indexOf("guide") == 0) {
         hdf.setValue("guide", "true");
-      } else if (filename.indexOf("training/") == 0) {
+      } else if (filename.indexOf("training") == 0) {
         hdf.setValue("training", "true");
-      } else if (filename.indexOf("more/") == 0) {
+      } else if (filename.indexOf("more") == 0) {
         hdf.setValue("more", "true");
-      } else if (filename.indexOf("google/") == 0) {
+      } else if (filename.indexOf("google") == 0) {
         hdf.setValue("google", "true");
-      } else if (filename.indexOf("distribute/") == 0) {
+      } else if (filename.indexOf("distribute") == 0) {
         hdf.setValue("distribute", "true");
-      } else if (filename.indexOf("about/") == 0) {
+      } else if (filename.indexOf("about") == 0) {
         hdf.setValue("about", "true");
-      } else if ((filename.indexOf("tools/") == 0) || (filename.indexOf("sdk/") == 0)) {
+      } else if ((filename.indexOf("tools") == 0) || (filename.indexOf("sdk") == 0)) {
         hdf.setValue("tools", "true");
+        fromTemplate = hdf.getValue("page.template", "");
       }
-
-      if ((filename.indexOf("tools/sdk/preview/index.html") == 0) ||
-          (filename.indexOf("sdk/index.html") == 0) ||
-          (filename.indexOf("tools/sdk/ndk/index.html") == 0)) {
+      if (fromTemplate.equals("sdk")) {
         ClearPage.write(hdf, "sdkpage.cs", outfile);
       } else {
         ClearPage.write(hdf, "docpage.cs", outfile);
