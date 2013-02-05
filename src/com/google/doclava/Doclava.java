@@ -69,7 +69,6 @@ public class Doclava {
   public static ArrayList<String> inputPathHtmlDir2 = new ArrayList<String>();
   public static String outputPathHtmlDirs;
   public static String outputPathHtmlDir2;
-  public static boolean devsite = false;
   public static final String devsiteRoot = "en/";
   public static String javadocDir = "reference/";
   public static String htmlExtension;
@@ -247,7 +246,6 @@ public class Doclava {
       } else if (a[0].equals("-yaml")) {
         yamlNavFile = a[1];
       } else if (a[0].equals("-devsite")) {
-        devsite = true;
         // Don't copy the doclava assets to devsite output (ie use proj assets only)
         includeDefaultAssets = false;
         outputPathHtmlDirs = outputPathHtmlDirs + "/" + devsiteRoot;
@@ -786,10 +784,8 @@ public class Doclava {
     }
 
     // Create the timestamp.js file based on .cs file
-    if (devsite) {
-      Data timedata = Doclava.makeHDF();
-      ClearPage.write(timedata, "timestamp.cs", "timestamp.js");
-    }
+    Data timedata = Doclava.makeHDF();
+    ClearPage.write(timedata, "timestamp.cs", "timestamp.js");
   }
 
   public static void writeLists() {
