@@ -132,7 +132,6 @@ public class ClearPage {
     File file = new File(outputFilename(filename));
 
     ensureDirectory(file);
-
     Writer stream = null;
     try {
       stream = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
@@ -177,6 +176,11 @@ public class ClearPage {
       System.err.println(from.getAbsolutePath() + ": Error opening file");
       return;
     }
+    if (!isValidContentType(toPath, DROIDDOC_VALID_CONTENT_TYPES)) {
+        Errors.error(Errors.INVALID_CONTENT_TYPE, null, "Failed to process " + from
+                + ": Invalid file type. Please move the file to frameworks/base/docs/image_sources/... or docs/downloads/...");
+        return;
+    }
 
     long sizel = from.length();
     final int maxsize = 64 * 1024;
@@ -216,4 +220,14 @@ public class ClearPage {
     }
   }
 
+  public static String[] DROIDDOC_VALID_CONTENT_TYPES = {".txt", ".css", ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml", ".pdf"};
+
+  public static boolean isValidContentType(String s, String[] list) {
+    for (String t : list) {
+      if (s.endsWith(t)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

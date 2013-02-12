@@ -44,13 +44,12 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       return a.qualifiedName().compareTo(b.qualifiedName());
     }
   };
-  
+
   /**
    * Constructs a stub representation of a class.
    */
   public ClassInfo(String qualifiedName) {
     super("", SourcePositionInfo.UNKNOWN);
-    
     mQualifiedName = qualifiedName;
     if (qualifiedName.lastIndexOf('.') != -1) {
       mName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
@@ -1195,6 +1194,13 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       if (pkg != null && pkg.isHidden()) {
         return true;
       }
+      if (cl.annotations() != null) {
+        for (AnnotationInstanceInfo info : cl.annotations()) {
+          if (Doclava.showAnnotations.contains(info.type().qualifiedName())) {
+            return false;
+          }
+        }
+      }
       if (cl.comment().isHidden()) {
         return true;
       }
@@ -1244,7 +1250,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
     return null;
   }
-  
+
   public boolean supportsMethod(MethodInfo method) {
     for (MethodInfo m : methods()) {
       if (m.getHashableName().equals(method.getHashableName())) {
@@ -1373,7 +1379,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
     return null;
   }
-  
+
   public String scope() {
     if (isPublic()) {
       return "public";
@@ -1467,7 +1473,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   private String mReasonIncluded;
   private ArrayList<MethodInfo> mNonWrittenConstructors;
   private boolean mIsDeprecated;
-  
+
   // TODO: Temporary members from apicheck migration.
   private HashMap<String, MethodInfo> mApiCheckConstructors = new HashMap<String, MethodInfo>();
   private HashMap<String, MethodInfo> mApiCheckMethods = new HashMap<String, MethodInfo>();
@@ -1476,7 +1482,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
   // Resolutions
   private ArrayList<Resolution> mResolutions;
-  
+
   /**
    * Returns true if {@code cl} implements the interface {@code iface} either by either being that
    * interface, implementing that interface or extending a type that implements the interface.
@@ -1538,7 +1544,6 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
    * Returns all methods defined directly in this class. For a list of all
    * methods supported by this class, see {@link #methods()}.
    */
-  
   public Map<String, MethodInfo> allMethods() {
     return mApiCheckMethods;
   }
@@ -1553,7 +1558,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
     return result;
   }
-  
+
   public String superclassName() {
     if (mSuperclass == null) {
       if (mQualifiedName.equals("java.lang.Object")) {
@@ -1563,11 +1568,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
     return mSuperclass.mQualifiedName;
   }
-  
+
   public void setAnnotations(ArrayList<AnnotationInstanceInfo> annotations) {
     mAnnotations = annotations;
   }
-  
+
   public boolean isConsistent(ClassInfo cl) {
     boolean consistent = true;
 
@@ -1727,7 +1732,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
     return consistent;
   }
-  
+
   // Find a superclass implementation of the given method.
   public static MethodInfo overriddenMethod(MethodInfo candidate, ClassInfo newClassObj) {
     if (newClassObj == null) {
@@ -1758,7 +1763,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     }
     return ClassInfo.interfaceMethod(candidate, newClassObj.mSuperclass);
   }
-  
+
   public boolean hasConstructor(MethodInfo constructor) {
     String name = constructor.getHashableName();
     for (MethodInfo ctor : mApiCheckConstructors.values()) {

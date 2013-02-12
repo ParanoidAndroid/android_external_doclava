@@ -202,8 +202,9 @@ public class Comment {
 
       // +1 to get rid of opening brace and -1 to get rid of closing brace
       // maybe i wanna make this more elegant
-      tag(text.substring(start+1, endOfFirstPart),
-              text.substring(startOfSecondPart, end-1), true, pos);
+      String tagName = text.substring(start+1, endOfFirstPart);
+      String tagText = text.substring(startOfSecondPart, end-1);
+      tag(tagName, tagText, true, pos);
   }
 
 
@@ -311,6 +312,8 @@ public class Comment {
       mSeeTagsList.add(new SeeTagInfo("@see", "@see", text, mBase, pos));
     } else if (name.equals("@link") || name.equals("@linkplain")) {
       mInlineTagsList.add(new SeeTagInfo(name, "@see", text, mBase, pos));
+    } else if (name.equals("@value")) {
+      mInlineTagsList.add(new SeeTagInfo(name, "@value", text, mBase, pos));
     } else if (name.equals("@throws") || name.equals("@exception")) {
       mThrowsTagsList.add(new ThrowsTagInfo("@throws", "@throws", text, mBase, pos));
     } else if (name.equals("@return")) {
