@@ -830,8 +830,13 @@ public class Doclava {
       }
       i++;
     }
-
-    ClearPage.write(data, "lists.cs", javadocDir + "lists.js");
+    String listNamePrefix = new String("");
+    if(gcmRef)
+      listNamePrefix="gcm_";
+    else if (gmsRef){
+      listNamePrefix="gms_";
+    }
+    ClearPage.write(data, listNamePrefix + "lists.cs", javadocDir + listNamePrefix + "lists.js");
   }
 
   public static void cantStripThis(ClassInfo cl, HashSet<ClassInfo> notStrippable) {
