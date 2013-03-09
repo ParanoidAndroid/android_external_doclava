@@ -24,8 +24,8 @@ import java.util.regex.Matcher;
 
 
 public class DocFile {
-  private static final Pattern LINE = Pattern.compile("(.*)[\r]?\n", Pattern.MULTILINE);
-  private static final Pattern PROP = Pattern.compile("([^=]+)=(.*)");
+  public static final Pattern LINE = Pattern.compile("(.*)[\r]?\n", Pattern.MULTILINE);
+  public static final Pattern PROP = Pattern.compile("([^=]+)=(.*)");
 
   public static String readFile(String filename) {
     try {
