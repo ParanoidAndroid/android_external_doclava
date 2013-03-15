@@ -223,8 +223,10 @@ public class ClearPage {
 
   public static ArrayList<String> DROIDDOC_VALID_CONTENT_TYPES = new ArrayList<String>(Arrays.asList(".txt", ".css",
     ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml"));
-
-  public static ArrayList<String> DROIDDOC_EXCEPTED_CONTENT_TYPES = new ArrayList<String>(Arrays.asList(".pdf"));
+  /* Setting excepted types to allow everything. Leaving it this way in in case we want to explicitly
+   * specify file types later. This adds unneeded checking though since it lets everything through
+   */
+  public static ArrayList<String> DROIDDOC_EXCEPTED_CONTENT_TYPES = new ArrayList<String>(Arrays.asList(""));
 
   public static boolean isValidContentType(boolean allowExcepted, String s, ArrayList<String> list) {
     if(allowExcepted){
