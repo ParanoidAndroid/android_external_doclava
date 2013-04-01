@@ -134,7 +134,7 @@ public class Errors {
   public static Error REMOVED_FIELD = new Error(10, WARNING);
   public static Error REMOVED_INTERFACE = new Error(11, WARNING);
   public static Error CHANGED_STATIC = new Error(12, WARNING);
-  public static Error CHANGED_FINAL = new Error(13, WARNING);
+  public static Error ADDED_FINAL = new Error(13, WARNING);
   public static Error CHANGED_TRANSIENT = new Error(14, WARNING);
   public static Error CHANGED_VOLATILE = new Error(15, WARNING);
   public static Error CHANGED_TYPE = new Error(16, WARNING);
@@ -147,6 +147,8 @@ public class Errors {
   public static Error CHANGED_CLASS = new Error(23, WARNING);
   public static Error CHANGED_DEPRECATED = new Error(24, WARNING);
   public static Error CHANGED_SYNCHRONIZED = new Error(25, ERROR);
+  public static Error ADDED_FINAL_UNINSTANTIABLE = new Error(26, WARNING);
+  public static Error REMOVED_FINAL = new Error(27, WARNING);
 
   // Errors in javadoc generation
   public static final Error UNRESOLVED_LINK = new Error(101, WARNING);
@@ -175,10 +177,11 @@ public class Errors {
           UNAVAILABLE_SYMBOL, HIDDEN_SUPERCLASS, DEPRECATED, DEPRECATION_MISMATCH, MISSING_COMMENT,
           IO_ERROR, NO_SINCE_DATA, NO_FEDERATION_DATA, PARSE_ERROR, ADDED_PACKAGE, ADDED_CLASS,
           ADDED_METHOD, ADDED_FIELD, ADDED_INTERFACE, REMOVED_PACKAGE, REMOVED_CLASS,
-          REMOVED_METHOD, REMOVED_FIELD, REMOVED_INTERFACE, CHANGED_STATIC, CHANGED_FINAL,
+          REMOVED_METHOD, REMOVED_FIELD, REMOVED_INTERFACE, CHANGED_STATIC, ADDED_FINAL,
           CHANGED_TRANSIENT, CHANGED_VOLATILE, CHANGED_TYPE, CHANGED_VALUE, CHANGED_SUPERCLASS,
           CHANGED_SCOPE, CHANGED_ABSTRACT, CHANGED_THROWS, CHANGED_NATIVE, CHANGED_CLASS,
-          CHANGED_DEPRECATED, CHANGED_SYNCHRONIZED, BROKEN_SINCE_FILE, INVALID_CONTENT_TYPE};
+          CHANGED_DEPRECATED, CHANGED_SYNCHRONIZED, ADDED_FINAL_UNINSTANTIABLE, REMOVED_FINAL,
+          BROKEN_SINCE_FILE, INVALID_CONTENT_TYPE};
 
   public static boolean setErrorLevel(int code, int level) {
     for (Error e : ERRORS) {
