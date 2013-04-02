@@ -247,6 +247,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return mIsFinal;
   }
 
+  public boolean isEffectivelyFinal() {
+    return mIsFinal || mApiCheckConstructors.isEmpty();
+  }
+
   public boolean isIncluded() {
     return mIsIncluded;
   }

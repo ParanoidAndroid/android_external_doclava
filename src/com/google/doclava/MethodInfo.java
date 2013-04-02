@@ -624,8 +624,15 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolv
     return mIsVarargs;
   }
 
-  public boolean isFinalOrBelongsToFinalClass() {
-      return mIsFinal || (containingClass() != null && containingClass().isFinal());
+  public boolean isEffectivelyFinal() {
+      if (mIsFinal) {
+          return true;
+      }
+      ClassInfo containingClass = containingClass();
+      if (containingClass != null && containingClass.isEffectivelyFinal()) {
+          return true;
+      }
+      return false;
   }
 
   @Override
@@ -738,11 +745,11 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolv
       // the compiler, so this check needs to be quite narrow. A change in 'final'
       // status of a method is only relevant if (a) the method is not declared 'static'
       // and (b) the method is not already inferred to be 'final' by virtue of its class.
-      if (!isFinalOrBelongsToFinalClass() && mInfo.isFinalOrBelongsToFinalClass()) {
+      if (!isEffectivelyFinal() && mInfo.isEffectivelyFinal()) {
         consistent = false;
         Errors.error(Errors.ADDED_FINAL, mInfo.position(), "Method " + mInfo.qualifiedName()
             + " has added 'final' qualifier");
-      } else if (isFinalOrBelongsToFinalClass() && !mInfo.isFinalOrBelongsToFinalClass()) {
+      } else if (isEffectivelyFinal() && !mInfo.isEffectivelyFinal()) {
         consistent = false;
         Errors.error(Errors.REMOVED_FINAL, mInfo.position(), "Method " + mInfo.qualifiedName()
             + " has removed 'final' qualifier");
