@@ -911,7 +911,9 @@ public class Doclava {
           String dirName = (webPath.indexOf("/") != -1)
                   ? webPath.substring(0, webPath.indexOf("/")) : "";
 
-          if (!"".equals(title) && !"intl".equals(dirName)) {
+          if (!"".equals(title) &&
+              !"intl".equals(dirName) &&
+              !hdf.getBooleanValue("excludeFromSuggestions")) {
             data.setValue("docs.pages." + counter.i + ".label", title);
             data.setValue("docs.pages." + counter.i + ".link", webPath);
             data.setValue("docs.pages." + counter.i + ".tags", tags);
