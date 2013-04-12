@@ -898,12 +898,21 @@ public class Doclava {
 
           // Insert the goods into HDF data (title, link, tags, type)
           String title = hdf.getValue("page.title", "");
+          title = title.replaceAll("\"", "'");
+          // if there's a <span> in the title, get rid of it
+          if (title.indexOf("<span") != -1) {
+            String[] splitTitle = title.split("<span(.*?)</span>");
+            title = splitTitle[0];
+            for (int j = 1; j < splitTitle.length; j++) {
+              title.concat(splitTitle[j]);
+            }
+          }
           String tags = hdf.getValue("page.tags", "");
           String dirName = (webPath.indexOf("/") != -1)
                   ? webPath.substring(0, webPath.indexOf("/")) : "";
 
           if (!"".equals(title) && !"intl".equals(dirName)) {
-            data.setValue("docs.pages." + counter.i + ".label", title.replaceAll("\"", "'"));
+            data.setValue("docs.pages." + counter.i + ".label", title);
             data.setValue("docs.pages." + counter.i + ".link", webPath);
             data.setValue("docs.pages." + counter.i + ".tags", tags);
             data.setValue("docs.pages." + counter.i + ".type", dirName);
