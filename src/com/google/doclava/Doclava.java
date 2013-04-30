@@ -833,10 +833,12 @@ public class Doclava {
         PackageInfo pkg = (PackageInfo) o;
         data.setValue("docs.pages." + i + ".link", pkg.htmlPage());
         data.setValue("docs.pages." + i + ".type", "package");
+        data.setValue("docs.pages." + i + ".deprecated", pkg.isDeprecated() ? "true" : "false");
       } else if (o instanceof ClassInfo) {
         ClassInfo cl = (ClassInfo) o;
         data.setValue("docs.pages." + i + ".link", cl.htmlPage());
         data.setValue("docs.pages." + i + ".type", "class");
+        data.setValue("docs.pages." + i + ".deprecated", cl.isDeprecated() ? "true" : "false");
       }
       i++;
     }
