@@ -225,6 +225,8 @@ public class Doclava {
         apiFile = a[1];
       } else if (a[0].equals("-nodocs")) {
         generateDocs = false;
+      } else if (a[0].equals("-nodefaultassets")) {
+        includeDefaultAssets = false;
       } else if (a[0].equals("-parsecomments")) {
         parseComments = true;
       } else if (a[0].equals("-since")) {
@@ -582,6 +584,9 @@ public class Doclava {
       return 2;
     }
     if (option.equals("-nodocs")) {
+      return 1;
+    }
+    if (option.equals("-nodefaultassets")) {
       return 1;
     }
     if (option.equals("-parsecomments")) {
