@@ -845,17 +845,19 @@ public class Doclava {
     ClearPage.write(data, "lists.cs", javadocDir + "lists.js");
 
 
-    // Write the lists for JD documents
-    Data jddata = makeHDF();
-    Iterator counter = new Iterator();
-    for (String htmlDir : inputPathHtmlDirs) {
-      File dir = new File(htmlDir);
-      if (!dir.isDirectory()) {
-        continue;
+    // Write the lists for JD documents (if there are HTML directories to process)
+    if (inputPathHtmlDirs.size() > 0) {
+      Data jddata = makeHDF();
+      Iterator counter = new Iterator();
+      for (String htmlDir : inputPathHtmlDirs) {
+        File dir = new File(htmlDir);
+        if (!dir.isDirectory()) {
+          continue;
+        }
+        writeJdDirList(dir, jddata, counter);
       }
-      writeJdDirList(dir, jddata, counter);
+      ClearPage.write(jddata, "jd_lists.cs", javadocDir + "jd_lists.js");
     }
-    ClearPage.write(jddata, "jd_lists.cs", javadocDir + "jd_lists.js");
   }
 
   private static class Iterator {
