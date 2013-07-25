@@ -27,6 +27,7 @@ import com.sun.javadoc.*;
 
 import java.util.*;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
 import java.io.*;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Array;
@@ -90,6 +91,7 @@ public class Doclava {
 
   private static boolean gmsRef = false;
   private static boolean gcmRef = false;
+  private static boolean sac = false;
 
   public static boolean checkLevel(int level) {
     return (showLevel & level) == level;
@@ -224,6 +226,8 @@ public class Doclava {
         apiFile = a[1];
       } else if (a[0].equals("-nodocs")) {
         generateDocs = false;
+      } else if (a[0].equals("-nodefaultassets")) {
+        includeDefaultAssets = false;
       } else if (a[0].equals("-parsecomments")) {
         parseComments = true;
       } else if (a[0].equals("-since")) {
@@ -583,6 +587,9 @@ public class Doclava {
     if (option.equals("-nodocs")) {
       return 1;
     }
+    if (option.equals("-nodefaultassets")) {
+      return 1;
+    }
     if (option.equals("-parsecomments")) {
       return 1;
     }
@@ -735,8 +742,11 @@ public class Doclava {
         } else if (len > 3 && ".jd".equals(templ.substring(len - 3))) {
           String filename = templ.substring(0, len - 3) + htmlExtension;
           DocFile.writePage(f.getAbsolutePath(), relative, filename);
-        } else {
-          ClearPage.copyFile(f, templ);
+        } else if(!f.getName().equals(".DS_Store")){
+              Data data = makeHDF();
+              String hdfValue = data.getValue("sac") == null ? "" : data.getValue("sac");
+              boolean allowExcepted = hdfValue.equals("true") ? true : false;
+              ClearPage.copyFile(allowExcepted, f, templ);
         }
       } else if (f.isDirectory()) {
         writeDirectory(f, relative + f.getName() + "/", js);
@@ -788,7 +798,11 @@ public class Doclava {
     ClearPage.write(timedata, "timestamp.cs", "timestamp.js");
   }
 
+  /** Go through the docs and generate meta-data about each
+      page to use in search suggestions */
   public static void writeLists() {
+
+    // Write the lists for API references
     Data data = makeHDF();
 
     ClassInfo[] classes = Converter.rootClasses();
@@ -819,15 +833,107 @@ public class Doclava {
         PackageInfo pkg = (PackageInfo) o;
         data.setValue("docs.pages." + i + ".link", pkg.htmlPage());
         data.setValue("docs.pages." + i + ".type", "package");
+        data.setValue("docs.pages." + i + ".deprecated", pkg.isDeprecated() ? "true" : "false");
       } else if (o instanceof ClassInfo) {
         ClassInfo cl = (ClassInfo) o;
         data.setValue("docs.pages." + i + ".link", cl.htmlPage());
         data.setValue("docs.pages." + i + ".type", "class");
+        data.setValue("docs.pages." + i + ".deprecated", cl.isDeprecated() ? "true" : "false");
       }
       i++;
     }
-
     ClearPage.write(data, "lists.cs", javadocDir + "lists.js");
+
+
+    // Write the lists for JD documents (if there are HTML directories to process)
+    if (inputPathHtmlDirs.size() > 0) {
+      Data jddata = makeHDF();
+      Iterator counter = new Iterator();
+      for (String htmlDir : inputPathHtmlDirs) {
+        File dir = new File(htmlDir);
+        if (!dir.isDirectory()) {
+          continue;
+        }
+        writeJdDirList(dir, jddata, counter);
+      }
+      ClearPage.write(jddata, "jd_lists.cs", javadocDir + "jd_lists.js");
+    }
+  }
+
+  private static class Iterator {
+    int i = 0;
+  }
+
+  /** Write meta-data for a JD file, used for search suggestions */
+  private static void writeJdDirList(File dir, Data data, Iterator counter) {
+    File[] files = dir.listFiles();
+    int i, count = files.length;
+    // Loop all files in given directory
+    for (i = 0; i < count; i++) {
+      File f = files[i];
+      if (f.isFile()) {
+        String filePath = f.getAbsolutePath();
+        String templ = f.getName();
+        int len = templ.length();
+        // If it's a .jd file we want to process
+        if (len > 3 && ".jd".equals(templ.substring(len - 3))) {
+          // remove the directories below the site root
+          String webPath = filePath.substring(filePath.indexOf("docs/html/") + 10, filePath.length());
+          // replace .jd with .html
+          webPath = webPath.substring(0, webPath.length() - 3) + htmlExtension;
+          // Parse the .jd file for properties data at top of page
+          Data hdf = Doclava.makeHDF();
+          String filedata = DocFile.readFile(filePath);
+          Matcher lines = DocFile.LINE.matcher(filedata);
+          String line = null;
+          // Get each line to add the key-value to hdf
+          while (lines.find()) {
+            line = lines.group(1);
+            if (line.length() > 0) {
+              // Stop when we hit the body
+              if (line.equals("@jd:body")) {
+                break;
+              }
+              Matcher prop = DocFile.PROP.matcher(line);
+              if (prop.matches()) {
+                String key = prop.group(1);
+                String value = prop.group(2);
+                hdf.setValue(key, value);
+              } else {
+                break;
+              }
+            }
+          } // done gathering page properties
+
+          // Insert the goods into HDF data (title, link, tags, type)
+          String title = hdf.getValue("page.title", "");
+          title = title.replaceAll("\"", "'");
+          // if there's a <span> in the title, get rid of it
+          if (title.indexOf("<span") != -1) {
+            String[] splitTitle = title.split("<span(.*?)</span>");
+            title = splitTitle[0];
+            for (int j = 1; j < splitTitle.length; j++) {
+              title.concat(splitTitle[j]);
+            }
+          }
+          String tags = hdf.getValue("page.tags", "");
+          String dirName = (webPath.indexOf("/") != -1)
+                  ? webPath.substring(0, webPath.indexOf("/")) : "";
+
+          if (!"".equals(title) &&
+              !"intl".equals(dirName) &&
+              !hdf.getBooleanValue("excludeFromSuggestions")) {
+            data.setValue("docs.pages." + counter.i + ".label", title);
+            data.setValue("docs.pages." + counter.i + ".link", webPath);
+            data.setValue("docs.pages." + counter.i + ".tags", tags);
+            data.setValue("docs.pages." + counter.i + ".type", dirName);
+            counter.i++;
+          }
+        }
+      } else if (f.isDirectory()) {
+        writeJdDirList(f, data, counter);
+      }
+    }
   }
 
   public static void cantStripThis(ClassInfo cl, HashSet<ClassInfo> notStrippable) {

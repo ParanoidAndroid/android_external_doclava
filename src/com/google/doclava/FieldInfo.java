@@ -438,9 +438,13 @@ public class FieldInfo extends MemberInfo {
       consistent = false;
     }
 
-    if (mIsFinal != fInfo.mIsFinal) {
-      Errors.error(Errors.CHANGED_FINAL, fInfo.position(), "Field " + fInfo.qualifiedName()
-          + " has changed 'final' qualifier");
+    if (!mIsFinal && fInfo.mIsFinal) {
+      Errors.error(Errors.ADDED_FINAL, fInfo.position(), "Field " + fInfo.qualifiedName()
+          + " has added 'final' qualifier");
+      consistent = false;
+    } else if (mIsFinal && !fInfo.mIsFinal) {
+      Errors.error(Errors.REMOVED_FINAL, fInfo.position(), "Field " + fInfo.qualifiedName()
+          + " has removed 'final' qualifier");
       consistent = false;
     }
 

@@ -93,6 +93,10 @@ public abstract class DocInfo {
     return mDeprecatedSince;
   }
 
+  public boolean isDeprecated() {
+    return mDeprecatedSince != null ? true : false;
+  }
+
   public final void addFederatedReference(FederatedSite source) {
     mFederatedReferences.add(source);
   }
