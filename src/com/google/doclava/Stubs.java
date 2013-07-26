@@ -44,7 +44,7 @@ public class Stubs {
         xml.getParentFile().mkdirs();
         apiWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(xml)));
       } catch (FileNotFoundException e) {
-        System.out.println(new SourcePositionInfo(apiFile, 0, 0),
+        Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
             "Cannot open file for write.");
       }
     }
@@ -54,7 +54,7 @@ public class Stubs {
         keepList.getParentFile().mkdirs();
         keepListWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(keepList)));
       } catch (FileNotFoundException e) {
-        System.out.println(new SourcePositionInfo(keepListFile, 0, 0),
+        Errors.error(Errors.IO_ERROR, new SourcePositionInfo(keepListFile, 0, 0),
             "Cannot open file for write.");
       }
     }
@@ -72,12 +72,12 @@ public class Stubs {
       if (!cl.isHidden()) {
         for (MethodInfo m : cl.selfMethods()) {
           if (m.isHidden()) {
-            System.out.println(m.position() + "Reference to hidden method "
+            Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Reference to hidden method "
                 + m.name());
           } else if (m.isDeprecated()) {
             // don't bother reporting deprecated methods
             // unless they are public
-            System.out.println(m.position() + "Method " + cl.qualifiedName() + "."
+            Errors.error(Errors.DEPRECATED, m.position(), "Method " + cl.qualifiedName() + "."
                 + m.name() + " is deprecated");
           }
 
@@ -91,6 +91,7 @@ public class Stubs {
             TypeInfo t = p.type();
             if (!t.isPrimitive()) {
               if (t.asClassInfo().isHidden()) {
+//                Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Parameter of hidden type "
                 System.out.println( m.position() + "Parameter of hidden type "
                     + t.fullName() + " in " + cl.qualifiedName() + "." + m.name() + "()");
               }
@@ -101,13 +102,13 @@ public class Stubs {
         // annotations are handled like methods
         for (MethodInfo m : cl.annotationElements()) {
           if (m.isHidden()) {
-            System.out.println(m.position() + "Reference to hidden annotation "
+            Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Reference to hidden annotation "
                 + m.name());
           }
 
           ClassInfo returnClass = m.returnType().asClassInfo();
           if (returnClass != null && returnClass.isHidden()) {
-            System.out.println(m.position() + "Annotation '" + m.name()
+            Errors.error(Errors.UNAVAILABLE_SYMBOL, m.position(), "Annotation '" + m.name()
                 + "' returns unavailable type " + returnClass.name());
           }
 
@@ -115,7 +116,7 @@ public class Stubs {
             TypeInfo t = p.type();
             if (!t.isPrimitive()) {
               if (t.asClassInfo().isHidden()) {
-                System.out.println(p.position() +
+                Errors.error(Errors.UNAVAILABLE_SYMBOL, p.position(),
                     "Reference to unavailable annotation class " + t.fullName());
               }
             }
@@ -123,7 +124,7 @@ public class Stubs {
         }
       } else if (cl.isDeprecated()) {
         // not hidden, but deprecated
-        System.out.println(cl.position()+ "Class " + cl.qualifiedName()
+        Errors.error(Errors.DEPRECATED, cl.position(), "Class " + cl.qualifiedName()
             + " is deprecated");
       }
     }
@@ -226,6 +227,7 @@ public class Stubs {
             cl.allConstructors(), cl.allSelfMethods(), cl.annotationElements(), cl.allSelfFields(),
             cl.enumConstants(), cl.containingPackage(), cl.containingClass(), null, null, cl
                 .annotations());
+//        Errors.error(Errors.HIDDEN_SUPERCLASS, cl.position(), "Public class " + cl.qualifiedName()
         System.out.println( cl.position() + "Public class " + cl.qualifiedName()
             + " stripped of unavailable superclass " + supr.qualifiedName());
       } else {
