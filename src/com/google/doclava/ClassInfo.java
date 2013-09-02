@@ -247,6 +247,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return mIsFinal;
   }
 
+  public boolean isEffectivelyFinal() {
+    return mIsFinal || mApiCheckConstructors.isEmpty();
+  }
+
   public boolean isIncluded() {
     return mIsIncluded;
   }
@@ -1694,10 +1698,25 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
           + " changed abstract qualifier");
     }
 
-    if (mIsFinal != cl.mIsFinal) {
+    if (!mIsFinal && cl.mIsFinal) {
+      /*
+       * It is safe to make a class final if it did not previously have any public
+       * constructors because it was impossible for an application to create a subclass.
+       */
+      if (mApiCheckConstructors.isEmpty()) {
+        consistent = false;
+        Errors.error(Errors.ADDED_FINAL_UNINSTANTIABLE, cl.position(),
+            "Class " + cl.qualifiedName() + " added final qualifier but "
+            + "was previously uninstantiable and therefore could not be subclassed");
+      } else {
+        consistent = false;
+        Errors.error(Errors.ADDED_FINAL, cl.position(), "Class " + cl.qualifiedName()
+            + " added final qualifier");
+      }
+    } else if (mIsFinal && !cl.mIsFinal) {
       consistent = false;
-      Errors.error(Errors.CHANGED_FINAL, cl.position(), "Class " + cl.qualifiedName()
-          + " changed final qualifier");
+      Errors.error(Errors.REMOVED_FINAL, cl.position(), "Class " + cl.qualifiedName()
+          + " removed final qualifier");
     }
 
     if (mIsStatic != cl.mIsStatic) {

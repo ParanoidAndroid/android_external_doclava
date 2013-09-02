@@ -624,6 +624,17 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolv
     return mIsVarargs;
   }
 
+  public boolean isEffectivelyFinal() {
+      if (mIsFinal) {
+          return true;
+      }
+      ClassInfo containingClass = containingClass();
+      if (containingClass != null && containingClass.isEffectivelyFinal()) {
+          return true;
+      }
+      return false;
+  }
+
   @Override
   public String toString() {
     return this.name();
@@ -729,17 +740,19 @@ public class MethodInfo extends MemberInfo implements AbstractMethodInfo, Resolv
           + " has changed 'native' qualifier");
     }
 
-    if (mIsFinal != mInfo.mIsFinal) {
-      // Compiler-generated methods vary in their 'final' qual between versions of
+    if (!mIsStatic) {
+      // Compiler-generated methods vary in their 'final' qualifier between versions of
       // the compiler, so this check needs to be quite narrow. A change in 'final'
       // status of a method is only relevant if (a) the method is not declared 'static'
-      // and (b) the method's class is not itself 'final'.
-      if (!mIsStatic) {
-        if ((containingClass() == null) || (!containingClass().isFinal())) {
-          consistent = false;
-          Errors.error(Errors.CHANGED_FINAL, mInfo.position(), "Method " + mInfo.qualifiedName()
-              + " has changed 'final' qualifier");
-        }
+      // and (b) the method is not already inferred to be 'final' by virtue of its class.
+      if (!isEffectivelyFinal() && mInfo.isEffectivelyFinal()) {
+        consistent = false;
+        Errors.error(Errors.ADDED_FINAL, mInfo.position(), "Method " + mInfo.qualifiedName()
+            + " has added 'final' qualifier");
+      } else if (isEffectivelyFinal() && !mInfo.isEffectivelyFinal()) {
+        consistent = false;
+        Errors.error(Errors.REMOVED_FINAL, mInfo.position(), "Method " + mInfo.qualifiedName()
+            + " has removed 'final' qualifier");
       }
     }
 

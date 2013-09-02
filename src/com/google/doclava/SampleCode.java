@@ -84,13 +84,13 @@ public class SampleCode {
 
         if (inList(out, IMAGES)) {
           // copied directly
-          ClearPage.copyFile(f, out);
+          ClearPage.copyFile(false, f, out);
           writeImagePage(f, convertExtension(out, Doclava.htmlExtension), subdir);
           files.add(name);
         }
         if (inList(out, TEMPLATED)) {
           // copied and goes through the template
-          ClearPage.copyFile(f, out);
+          ClearPage.copyFile(false, f, out);
           writePage(f, convertExtension(out, Doclava.htmlExtension), subdir);
           files.add(name);
         }

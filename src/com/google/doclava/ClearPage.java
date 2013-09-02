@@ -28,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 
 public class ClearPage {
   /*
@@ -156,7 +157,7 @@ public class ClearPage {
     }
   }
 
-  public static void copyFile(File from, String toPath) {
+  public static void copyFile(boolean allowExcepted, File from, String toPath) {
     File to = new File(outputDir + "/" + toPath);
     FileInputStream in;
     FileOutputStream out;
@@ -176,7 +177,7 @@ public class ClearPage {
       System.err.println(from.getAbsolutePath() + ": Error opening file");
       return;
     }
-    if (!isValidContentType(toPath, DROIDDOC_VALID_CONTENT_TYPES)) {
+    if (!isValidContentType(allowExcepted, toPath, DROIDDOC_VALID_CONTENT_TYPES)) {
         Errors.error(Errors.INVALID_CONTENT_TYPE, null, "Failed to process " + from
                 + ": Invalid file type. Please move the file to frameworks/base/docs/image_sources/... or docs/downloads/...");
         return;
@@ -220,9 +221,17 @@ public class ClearPage {
     }
   }
 
-  public static String[] DROIDDOC_VALID_CONTENT_TYPES = {".txt", ".css", ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml", ".pdf"};
+  public static ArrayList<String> DROIDDOC_VALID_CONTENT_TYPES = new ArrayList<String>(Arrays.asList(".txt", ".css",
+    ".js", ".html", ".ico", ".png", ".jpg", ".gif", ".svg", ".webm", ".ogv","mp4", ".java", ".xml", ".aidl", ".rs",".zip", ".yaml"));
+  /* Setting excepted types to allow everything. Leaving it this way in in case we want to explicitly
+   * specify file types later. This adds unneeded checking though since it lets everything through
+   */
+  public static ArrayList<String> DROIDDOC_EXCEPTED_CONTENT_TYPES = new ArrayList<String>(Arrays.asList(""));
 
-  public static boolean isValidContentType(String s, String[] list) {
+  public static boolean isValidContentType(boolean allowExcepted, String s, ArrayList<String> list) {
+    if(allowExcepted){
+      list.addAll(DROIDDOC_EXCEPTED_CONTENT_TYPES);
+    }
     for (String t : list) {
       if (s.endsWith(t)) {
         return true;
